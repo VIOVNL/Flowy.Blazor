@@ -40,7 +40,7 @@
 
   <ItemGroup>
     <!-- Package readme, license and icon -->
-    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="Flowy.png" Pack="true" PackagePath="\" />
   </ItemGroup>
