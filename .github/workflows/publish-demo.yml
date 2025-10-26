@@ -1,0 +1,32 @@
+name: 📂 .NET Build & Sync Demo
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: ⏬ Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.x
+    - name: 📦 Restore dependencies
+      run: dotnet restore VIOVNL.Flowy.Demo/VIOVNL.Flowy.Demo.csproj
+    - name: 🏗️ Build
+      run: dotnet build VIOVNL.Flowy.Demo/VIOVNL.Flowy.Demo.csproj --configuration Release --no-restore
+    - name: 📩 Publish to Release folder
+      run: dotnet publish VIOVNL.Flowy.Demo/VIOVNL.Flowy.Demo.csproj -c Release --no-build --output ./Release
+    - name: 🕍 Sync files from Release folder to FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_IP }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./Release/
+        server-dir: ./
+    - name: 🛜 Install SSHPass
+      run: sudo apt-get install -y sshpass
+    - name: 📤 SSH into server and restart service
+      run: |
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_IP }} "systemctl restart ${{ secrets.SERVICE_NAME}}"
