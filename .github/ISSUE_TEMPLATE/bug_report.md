@@ -34,7 +34,7 @@ If applicable, add screenshots to help explain your problem.
 
 ## Environment
 - **VIOVNL.Flowy.Blazor Version**: [e.g. 1.0.0]
-- **.NET Version**: [e.g. .NET 9.0]
+- **.NET Version**: [e.g. .NET 8.0, .NET 9.0]
 - **Blazor Type**: [Server / WebAssembly / Auto]
 - **Browser**: [e.g. Chrome 120, Firefox 121]
 - **OS**: [e.g. Windows 11, macOS 14, Ubuntu 22.04]

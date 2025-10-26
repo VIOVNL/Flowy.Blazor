@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🧪 Demo application with interactive examples
 
 ### Technical Details
-- Built on **.NET 9.0**
+- Multi-targets **.NET 8.0** and **.NET 9.0**
 - Blazor Server and WebAssembly compatible
 - ES6 modular JavaScript architecture
 - Fluent Design System styling

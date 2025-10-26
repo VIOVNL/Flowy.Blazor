@@ -29,7 +29,7 @@ What are you trying to achieve?
 
 ## Environment (if relevant)
 - **VIOVNL.Flowy.Blazor Version**: [e.g. 1.0.0]
-- **.NET Version**: [e.g. .NET 9.0]
+- **.NET Version**: [e.g. .NET 8.0, .NET 9.0]
 - **Blazor Type**: [Server / WebAssembly / Auto]
 
 ## Additional Context
