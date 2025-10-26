@@ -1,0 +1,1791 @@
+@page "/"
+@rendermode InteractiveServer
+@using VIOVNL.Flowy.Blazor.Components
+@using VIOVNL.Flowy.Blazor.Models
+@using VIOVNL.Flowy.Blazor.Services
+@using System.Text.Json
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<PageTitle>VIOVNL.Flowy.Blazor - Diagram Component</PageTitle>
+
+<div class="demo-page">
+    <div class="page-header">
+        <h1>🌊 VIOVNL.Flowy.Blazor Diagram Component</h1>
+        <p class="subtitle">Build beautiful, interactive hierarchical tree visualizations with drag-and-drop functionality. Perfect for family trees, org charts, decision trees, and any hierarchical data structure.</p>
+    </div>
+
+    <div class="example-container">
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab-btn @(activeTab == "installation" ? "active" : "")" @onclick='() => activeTab = "installation"'>
+                    📦 Installation
+                </button>
+                <button class="tab-btn @(activeTab == "demo" ? "active" : "")" @onclick='() => activeTab = "demo"'>
+                    👁️ Interactive Demo
+                </button>
+                <button class="tab-btn @(activeTab == "props" ? "active" : "")" @onclick='() => activeTab = "props"'>
+                    ⚙️ Properties Reference
+                </button>
+                <button class="tab-btn @(activeTab == "events" ? "active" : "")" @onclick='() => activeTab = "events"'>
+                    ⚡ Events Reference
+                </button>
+                <button class="tab-btn @(activeTab == "functions" ? "active" : "")" @onclick='() => activeTab = "functions"'>
+                    🔧 Functions Reference
+                </button>
+                <button class="tab-btn @(activeTab == "code" ? "active" : "")" @onclick='() => activeTab = "code"'>
+                    💻 Complete Code
+                </button>
+            </div>
+
+            <div class="tab-content">
+                @if (activeTab == "installation")
+                {
+                    <div class="installation-content">
+                        <h2>🚀 Quick Start</h2>
+                        
+                        <div class="install-step">
+                            <h3>Step 1: Install the Package</h3>
+                            <p>Add VIOVNL.Flowy.Blazor to your project using one of the following methods:</p>
+                            
+                            <div class="code-tabs">
+                                <div class="code-block">
+                                    <div class="code-label">.NET CLI</div>
+                                    <pre><code class="language-bash">dotnet add package VIOVNL.Flowy.Blazor</code></pre>
+                                </div>
+                                <div class="code-block">
+                                    <div class="code-label">Package Manager</div>
+                                    <pre><code class="language-powershell">Install-Package VIOVNL.Flowy.Blazor</code></pre>
+                                </div>
+                                <div class="code-block">
+                                    <div class="code-label">PackageReference</div>
+                                    <pre><code class="language-xml">&lt;PackageReference Include="VIOVNL.Flowy.Blazor" Version="1.0.0" /&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="install-step">
+                            <h3>Step 2: Add Using Statement</h3>
+                            <p>Add the following to your <code>_Imports.razor</code> file:</p>
+                            <pre><code class="language-csharp">@("@")using VIOVNL.Flowy.Blazor.Components
+@("@")using VIOVNL.Flowy.Blazor.Models</code></pre>
+                        </div>
+
+                        <div class="install-step">
+                            <h3>Step 3: Add Static Assets</h3>
+                            <p>Include the CSS and JavaScript files in your <code>App.razor</code> or <code>_Host.cshtml</code>:</p>
+                            <pre><code class="language-html">&lt;head&gt;
+    &lt;!-- Add Flowy CSS --&gt;
+    &lt;link rel="stylesheet" href="_content/VIOVNL.Flowy.Blazor/css/flowy.css" /&gt;
+&lt;/head&gt;</code></pre>
+                            <p style="margin-top: 12px;"><strong>Note:</strong> JavaScript is loaded automatically via ES6 modules.</p>
+                        </div>
+
+                        <div class="install-step">
+                            <h3>Step 4: Basic Usage</h3>
+                            <p>Add the component to your page:</p>
+                            <pre><code class="language-csharp">@("@")page "/family-tree"
+@("@")rendermode InteractiveServer
+
+&lt;FlowyCanvasEditor Components="@("@")components" /&gt;
+
+@("@")code {
+    private List&lt;FlowyComponentItem&gt; components = new()
+    {
+        new FlowyComponentItem 
+        { 
+            ComponentId = "person",
+            Name = "Person",
+            Color = "#667eea"
+        },
+        new FlowyComponentItem 
+        { 
+            ComponentId = "spouse",
+            Name = "Spouse",
+            Color = "#f093fb"
+        }
+    };
+}</code></pre>
+                        </div>
+
+                        <div class="install-step">
+                            <h3>Step 5: Add Component Panel (Optional)</h3>
+                            <p>For a complete drag-and-drop experience, add the components panel:</p>
+                            <pre><code class="language-csharp">&lt;div style="display: flex; height: 600px; gap: 16px;"&gt;
+    &lt;FlowyComponentsPanel Components="@("@")components" 
+                        Title="Components"
+                        Style="width: 220px;" /&gt;
+    
+    &lt;FlowyCanvasEditor Components="@("@")components"
+                     Style="flex: 1;" /&gt;
+&lt;/div&gt;</code></pre>
+                        </div>
+                    </div>
+                }
+                else if (activeTab == "demo")
+                {
+                    <div class="demo-tab-content">
+                        <div class="controls-section">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <h4>🔍 Zoom & Pan</h4>
+                    <label>
+                        <input type="checkbox" @bind="enablePanning" />
+                        Enable Panning
+                    </label>
+                    <label>
+                        <input type="checkbox" @bind="autoZoom" />
+                        Auto Zoom @(autoZoom ? "✅" : "❌")
+                    </label>
+                    <label>
+                        <input type="checkbox" @bind="autoCenter" />
+                        Auto Center
+                    </label>
+                    <div style="margin-top: 8px;">
+                        <label style="display: block; margin-bottom: 4px;">
+                            Zoom Level: <strong>@zoomLevel.ToString("0.00")x</strong>
+                        </label>
+                        <input type="range" min="0.5" max="2.0" step="0.05" @bind="zoomLevel" style="width: 100%;" />
+                    </div>
+                    <button @onclick="FitToScreen" class="tool-btn">
+                        🎯 Fit to Screen
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <h4>✨ Visual Effects</h4>
+                    <label>
+                        <input type="checkbox" @bind="smooth" />
+                        Smooth Animations
+                    </label>
+                    <label>
+                        <input type="checkbox" @bind="debug" />
+                        Debug Mode
+                    </label>
+                    <label>
+                        <input type="checkbox" @bind="enableDragDrop" />
+                        Enable Drag & Drop
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <h4>🚀 Programmatic Controls</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <select @bind="selectedComponentId" class="control-select">
+                            <option value="">Select component...</option>
+                            @foreach (var comp in components)
+                            {
+                                <option value="@comp.ComponentId">@comp.Name</option>
+                            }
+                        </select>
+                        <button class="tool-btn" @onclick="AddSelectedNode" disabled="@(string.IsNullOrEmpty(selectedComponentId))">
+                            ➕ Add Selected Node
+                        </button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                        <select @bind="selectedNodeId" class="control-select">
+                            <option value="">Select node...</option>
+                            @if (canvasEditor != null)
+                            {
+                                @foreach (var node in canvasEditor.Nodes)
+                                {
+                                    <option value="@node.Id.ToString()">@node.Name</option>
+                                }
+                            }
+                        </select>
+                        <button class="tool-btn" @onclick="RemoveSelectedNode" disabled="@(string.IsNullOrEmpty(selectedNodeId))">
+                            ➖ Remove Selected Node
+                        </button>
+                    </div>
+                    <button class="tool-btn" @onclick="ResetCanvas">🔄 Reset Canvas</button>
+                </div>
+
+                <div class="control-group">
+                    <h4>🔧 Advanced Node Control</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <select @bind="advancedNodeId" class="control-select">
+                            <option value="">Select node...</option>
+                            @if (canvasEditor != null)
+                            {
+                                @foreach (var node in canvasEditor.Nodes)
+                                {
+                                    <option value="@node.Id.ToString()">@node.Name</option>
+                                }
+                            }
+                        </select>
+                        <button class="tool-btn" @onclick="ToggleNodeDraggable" disabled="@(string.IsNullOrEmpty(advancedNodeId))">
+                            🔒 Toggle Draggable
+                        </button>
+                        <button class="tool-btn" @onclick="ToggleNodeCanHaveChildren" disabled="@(string.IsNullOrEmpty(advancedNodeId))">
+                            👶 Toggle Can Have Children
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(advancedStatusMessage))
+                    {
+                        <small style="color: #43e97b; display: block; margin-top: 4px;">@advancedStatusMessage</small>
+                    }
+                </div>
+
+                <div class="control-group">
+                    <h4>🎨 Validation Demo</h4>
+                    <label>
+                        <input type="checkbox" @bind="enableValidation" />
+                        Enable Custom Validation
+                    </label>
+                    @if (enableValidation)
+                    {
+                        <small style="display: block; margin-top: 4px; line-height: 1.4;">
+                            Active: "Danger" nodes cannot have "Success" children
+                        </small>
+                    }
+                    @if (!string.IsNullOrEmpty(validationMessage))
+                    {
+                        <small style="color: #fa709a; display: block; margin-top: 4px;">⚠️ @validationMessage</small>
+                    }
+                </div>
+
+                <div class="control-group">
+                    <h4>🎯 Navigation</h4>
+                    <button class="tool-btn" @onclick="ZoomIn">➕ Zoom In</button>
+                    <button class="tool-btn" @onclick="ZoomOut">➖ Zoom Out</button>
+                    <button class="tool-btn" @onclick="ZoomReset">� Reset Zoom</button>
+                    <button class="tool-btn" @onclick="CenterCanvas">🎯 Center Canvas</button>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                        <select @bind="selectedFocusNodeId" class="control-select">
+                            <option value="">Select node to focus...</option>
+                            @if (canvasEditor != null)
+                            {
+                                @foreach (var node in canvasEditor.Nodes)
+                                {
+                                    <option value="@node.Id">@node.Name</option>
+                                }
+                            }
+                        </select>
+                        <button class="tool-btn" @onclick="FocusSelectedNode" disabled="@(string.IsNullOrEmpty(selectedFocusNodeId))">
+                            👁️ Focus Selected Node
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>💾 Data Management</h4>
+                    <button class="tool-btn" @onclick="ExportJson">� Export JSON</button>
+                    <button class="tool-btn" @onclick="ImportJson">📥 Import JSON</button>
+                    @if (!string.IsNullOrEmpty(exportedJson))
+                    {
+                        <small style="color: #43e97b; display: block; margin-top: 4px;">✓ Exported</small>
+                    }
+                </div>
+
+                <div class="control-group">
+                    <h4>💧 Flow Droplets Animation</h4>
+                    <select @bind="flowStartNodeId" class="control-select">
+                        <option value="">Select start node...</option>
+                        @if (canvasEditor != null)
+                        {
+                            @foreach (var node in canvasEditor.Nodes)
+                            {
+                                <option value="@node.Id.ToString()">@node.Name</option>
+                            }
+                        }
+                    </select>
+                    <select @bind="flowEndNodeId" class="control-select">
+                        <option value="">Select end node...</option>
+                        @if (canvasEditor != null)
+                        {
+                            @foreach (var node in canvasEditor.Nodes)
+                            {
+                                <option value="@node.Id.ToString()">@node.Name</option>
+                            }
+                        }
+                    </select>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Duration: <strong>@flowDuration ms</strong></label>
+                            <input type="range" min="200" max="2000" step="100" @bind="flowDuration" style="width: 100%;" disabled="@isFlowing" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Count: <strong>@flowDropletCount</strong></label>
+                            <input type="range" min="1" max="15" step="1" @bind="flowDropletCount" style="width: 100%;" disabled="@isFlowing" />
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Delay: <strong>@flowDropletDelay ms</strong></label>
+                            <input type="range" min="50" max="500" step="50" @bind="flowDropletDelay" style="width: 100%;" disabled="@isFlowing" />
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Distance: <strong>@flowDropletDistance.ToString("0.00")</strong></label>
+                            <input type="range" min="0" max="0.5" step="0.05" @bind="flowDropletDistance" style="width: 100%;" disabled="@isFlowing" />
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 4px;">Easing: <strong>@flowEasing</strong></label>
+                        <select @bind="flowEasing" class="control-select" disabled="@isFlowing">
+                            <option value="linear">Linear</option>
+                            <option value="easeIn">Ease In</option>
+                            <option value="easeOut">Ease Out</option>
+                            <option value="easeInOut">Ease In Out</option>
+                            <option value="easeInQuad">Ease In Quad</option>
+                            <option value="easeOutQuad">Ease Out Quad</option>
+                            <option value="easeInOutQuad">Ease In Out Quad</option>
+                            <option value="easeInCubic">Ease In Cubic</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button class="tool-btn" style="flex: 1;" @onclick="StartFlow" 
+                                disabled="@(string.IsNullOrEmpty(flowStartNodeId) || string.IsNullOrEmpty(flowEndNodeId) || isFlowing)">
+                            ▶️ Start Flow
+                        </button>
+                        <button class="tool-btn" style="flex: 1;" @onclick="StopFlow" disabled="@(!isFlowing)">
+                            ⏹️ Stop
+                        </button>
+                    </div>
+                    @if (isFlowing)
+                    {
+                        <small style="color: #43e97b; display: block; margin-top: 4px;">✓ Flow active</small>
+                    }
+                    @if (!string.IsNullOrEmpty(flowErrorMessage))
+                    {
+                        <small style="color: #fa709a; display: block; margin-top: 4px;">@flowErrorMessage</small>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-wrapper">
+            <div style="display: flex; height: 600px; gap: 16px;">
+                <FlowyComponentsPanel Components="@components" 
+                                    Title="Components"
+                                    Style="width: 220px; flex-shrink: 0;" />
+                
+                <FlowyCanvasEditor @ref="canvasEditor"
+                                 Components="@components"
+                                 EnablePanning="@enablePanning"
+                                 @bind-AutoZoom="autoZoom"
+                                 AutoCenter="@autoCenter"
+                                 @bind-ZoomLevel="zoomLevel"
+                                 Smooth="@smooth"
+                                 Debug="@debug"
+                                 EnableDragDrop="@enableDragDrop"
+                                 PlaceholderText="@placeholderText"
+                                 CssClass="@cssClass"
+                                 OnNodeDropped="HandleNodeDropped"
+                                 OnNodeAdded="HandleNodeAdded"
+                                 OnNodeMoved="HandleNodeMoved"
+                                 OnNodeRemoved="HandleNodeRemoved"
+                                 OnNodeSelected="HandleNodeSelected"
+                                 OnTreeRestructured="HandleTreeRestructured"
+                                 OnValidateDropTarget="HandleValidateDropTarget"
+                                 Style="flex: 1;" />
+            </div>
+
+            <div class="event-log-panel">
+                <h4>📊 Event Log (Real-time)</h4>
+                <div class="event-list">
+                    @foreach (var evt in eventLog.Take(10))
+                    {
+                        <div class="event-entry @evt.Type">
+                            <span class="event-icon">@evt.Icon</span>
+                            <span class="event-time">@evt.Time</span>
+                            <span class="event-message">@evt.Message</span>
+                        </div>
+                    }
+                </div>
+                <button class="btn-clear" @onclick="ClearLog">Clear Log</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(exportedJson))
+            {
+                <div class="json-output">
+                    <h4>Exported Tree JSON:</h4>
+                    <pre><code class="language-json">@exportedJson</code></pre>
+                    <button class="tool-btn" @onclick='() => exportedJson = null'>✖ Close</button>
+                </div>
+            }
+        </div>
+                    </div>
+                }
+                else if (activeTab == "props")
+                {
+                    <div class="properties-content">
+                        <h2>📋 Component Properties Reference</h2>
+                        <p class="subtitle">Complete configuration options for <code>FlowyCanvasEditor</code></p>
+
+                        <div class="props-section">
+                            <h3>🎨 Data & Components</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Property</th>
+                                            <th>Type</th>
+                                            <th>Default</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>Components</code></td>
+                                            <td><code>List&lt;FlowyComponentItem&gt;</code></td>
+                                            <td><code>[]</code></td>
+                                            <td>List of draggable components available in the toolbox. Each item defines a node type with name, icon, and color.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🔍 Viewport & Navigation</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Property</th>
+                                            <th>Type</th>
+                                            <th>Default</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>EnablePanning</code></td>
+                                            <td><code>bool</code></td>
+                                            <td><code>true</code></td>
+                                            <td>Allow canvas panning with mouse drag (left-click, space+drag, middle-click) or touch gestures.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>AutoZoom</code></td>
+                                            <td><code>bool</code></td>
+                                            <td><code>false</code></td>
+                                            <td>Automatically zoom to fit all nodes in view. Two-way bindable with <code>@@bind-AutoZoom</code>. Disables when user manually zooms.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>AutoCenter</code></td>
+                                            <td><code>bool</code></td>
+                                            <td><code>false</code></td>
+                                            <td>Automatically center the canvas on the root node after layout changes. Works independently of zoom level.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ZoomLevel</code></td>
+                                            <td><code>double</code></td>
+                                            <td><code>1.0</code></td>
+                                            <td>Manual zoom level (0.1 to 3.0). Two-way bindable with <code>@@bind-ZoomLevel</code>. Setting this disables AutoZoom.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>Smooth</code></td>
+                                            <td><code>bool</code></td>
+                                            <td><code>true</code></td>
+                                            <td>Enable smooth animations with momentum physics for panning, zooming, and camera movement. Provides fluid UX.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>⚙️ Behavior & Interaction</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Property</th>
+                                            <th>Type</th>
+                                            <th>Default</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>EnableDragDrop</code></td>
+                                            <td><code>bool</code></td>
+                                            <td><code>true</code></td>
+                                            <td>Enable component drag & drop functionality. When disabled, users cannot add or move nodes via drag operations.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>Debug</code></td>
+                                            <td><code>bool</code></td>
+                                            <td><code>false</code></td>
+                                            <td>Enable detailed JavaScript console logging for performance tracking, node operations, and timing information.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🎭 Styling & Customization</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Property</th>
+                                            <th>Type</th>
+                                            <th>Default</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>PlaceholderText</code></td>
+                                            <td><code>string</code></td>
+                                            <td><code>"✨ Drag..."</code></td>
+                                            <td>Text displayed when canvas is empty, guiding users to add their first node.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>CssClass</code></td>
+                                            <td><code>string?</code></td>
+                                            <td><code>null</code></td>
+                                            <td>Additional CSS class applied to the canvas container for custom styling.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>Style</code></td>
+                                            <td><code>string?</code></td>
+                                            <td><code>null</code></td>
+                                            <td>Inline CSS styles for the canvas container. Defaults to <code>"width: 100%; height: 100%"</code> if not specified.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>💡 Two-Way Binding</h3>
+                            <p>The following properties support two-way binding with <code>@@bind-</code> syntax:</p>
+                            <ul>
+                                <li><strong>AutoZoom</strong>: Syncs when user manually zooms (automatically set to false)</li>
+                                <li><strong>ZoomLevel</strong>: Syncs when zoom changes via mouse wheel, keyboard shortcuts, or API calls</li>
+                            </ul>
+                            <div class="code-block">
+                                <pre><code class="language-html">&lt;FlowyCanvasEditor @@bind-ZoomLevel="zoomLevel" @@bind-AutoZoom="autoZoom" /&gt;</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (activeTab == "events")
+                {
+                    <div class="properties-content">
+                        <h2>⚡ Event Callbacks Reference</h2>
+                        <p class="subtitle">Comprehensive event system for tracking and responding to user interactions</p>
+
+                        <div class="props-section">
+                            <h3>🎯 Node Lifecycle Events</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>OnNodeDropped</code></td>
+                                            <td><code>EventCallback&lt;FlowyNodeDroppedEventArgs&gt;</code></td>
+                                            <td>Fired when a component is dropped onto the canvas or when an existing node is dragged to a new parent. Contains node details, target node, drop position, and whether it's a new node.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>OnNodeAdded</code></td>
+                                            <td><code>EventCallback&lt;FlowyNodeEventArgs&gt;</code></td>
+                                            <td>Fired when a node is added programmatically via <code>AddNodeAsync()</code>. Includes the new node and parent information.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>OnNodeMoved</code></td>
+                                            <td><code>EventCallback&lt;FlowyNodeMovedEventArgs&gt;</code></td>
+                                            <td>Fired when an existing node is moved to a new parent in the tree hierarchy. Contains the node ID and new parent ID.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>OnNodeRemoved</code></td>
+                                            <td><code>EventCallback&lt;FlowyNodeRemovedEventArgs&gt;</code></td>
+                                            <td>Fired when a node is removed from the tree via <code>RemoveNodeAsync()</code>. Contains the removed node ID and complete node object.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>OnNodeSelected</code></td>
+                                            <td><code>EventCallback&lt;FlowyNodeSelectedEventArgs&gt;</code></td>
+                                            <td>Fired when a user clicks on a node to select it. Provides both the currently selected node and previously selected node for comparison.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🌳 Tree Structure Events</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>OnTreeRestructured</code></td>
+                                            <td><code>EventCallback&lt;FlowyTreeRestructuredEventArgs&gt;</code></td>
+                                            <td>Fired when tree structure changes via promote/demote operations. Contains operation type ("promote" or "demote") and affected node ID.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>OnTreeChanged</code></td>
+                                            <td><code>EventCallback</code></td>
+                                            <td>General event fired whenever the tree structure changes (add, remove, move operations). No event arguments provided.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>✅ Validation Events</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>OnValidateDropTarget</code></td>
+                                            <td><code>EventCallback&lt;FlowyValidationEventArgs&gt;</code></td>
+                                            <td>Fired before a drop operation to validate if the target location is allowed. Set <code>IsValid</code> to false and provide <code>ValidationMessage</code> to prevent the drop.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🔍 Viewport Events</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>ZoomLevelChanged</code></td>
+                                            <td><code>EventCallback&lt;double&gt;</code></td>
+                                            <td>Fired when zoom level changes via mouse wheel, keyboard shortcuts, or API calls. Use <code>@@bind-ZoomLevel</code> for automatic two-way binding.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>AutoZoomChanged</code></td>
+                                            <td><code>EventCallback&lt;bool&gt;</code></td>
+                                            <td>Fired when AutoZoom is enabled or disabled (automatically disabled when user manually zooms). Use <code>@@bind-AutoZoom</code> for two-way binding.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>📋 Event Arguments Details</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-top: 16px;">
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--accent-default);">FlowyNodeDroppedEventArgs</h4>
+                                    <ul style="margin: 0; padding-left: 20px;">
+                                        <li><code>Node</code>: The node being dropped</li>
+                                        <li><code>TargetNode</code>: Parent node (null if root)</li>
+                                        <li><code>Position</code>: Under, Left, or Right</li>
+                                        <li><code>IsNewNode</code>: True for new, false for move</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--accent-default);">FlowyNodeEventArgs</h4>
+                                    <ul style="margin: 0; padding-left: 20px;">
+                                        <li><code>Node</code>: The affected node</li>
+                                        <li><code>OldParent</code>: Previous parent node</li>
+                                        <li><code>NewParent</code>: New parent node</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--accent-default);">FlowyValidationEventArgs</h4>
+                                    <ul style="margin: 0; padding-left: 20px;">
+                                        <li><code>Node</code>: Node being validated</li>
+                                        <li><code>TargetNode</code>: Target parent node</li>
+                                        <li><code>IsValid</code>: Set to false to prevent drop</li>
+                                        <li><code>ValidationMessage</code>: Error message</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--accent-default);">FlowyNodeSelectedEventArgs</h4>
+                                    <ul style="margin: 0; padding-left: 20px;">
+                                        <li><code>Node</code>: Currently selected node</li>
+                                        <li><code>PreviousNode</code>: Previously selected</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section" style="background: var(--layer-fill-secondary);">
+                            <h3>💡 Event Handling Best Practices</h3>
+                            <ul>
+                                <li><strong>Async Support</strong>: All event handlers support async/await patterns for database operations and API calls</li>
+                                <li><strong>Two-Way Binding</strong>: Use <code>@@bind-ZoomLevel</code> and <code>@@bind-AutoZoom</code> for automatic state synchronization</li>
+                                <li><strong>Validation Logic</strong>: Implement <code>OnValidateDropTarget</code> to enforce business rules (e.g., maximum children, role restrictions)</li>
+                                <li><strong>State Management</strong>: Update application state in event handlers to keep UI in sync with tree changes</li>
+                                <li><strong>Side Effects</strong>: Trigger API calls, logging, analytics, or notifications based on user actions</li>
+                                <li><strong>Error Handling</strong>: Wrap event handler logic in try-catch blocks to prevent UI crashes</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>📝 Example Event Handler</h3>
+                            <div class="code-block">
+                                <pre><code class="language-csharp">private async Task HandleNodeDropped(FlowyNodeDroppedEventArgs args)
+{
+    // Log the operation
+    Console.WriteLine($"Node dropped: {args.Node.Name} under {args.TargetNode?.Name ?? "root"}");
+    
+    // Update backend
+    await SaveTreeStateAsync();
+    
+    // Trigger analytics
+    await TrackUserActionAsync("node_added", args.Node.Type);
+    
+    // Show notification
+    await ShowToastAsync($"Added {args.Node.Name} successfully!");
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (activeTab == "functions")
+                {
+                    <div class="properties-content">
+                        <h2>🔧 Public Methods Reference</h2>
+                        <p class="subtitle">Programmatic API for controlling the canvas and managing tree structure</p>
+
+                        <div class="props-section">
+                            <h3>📊 Data Access Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>GetNodeById(Guid nodeId)</code></td>
+                                            <td><code>FlowyNode?</code></td>
+                                            <td>Retrieves a specific node by its unique identifier. Returns null if not found.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>GetChildren(FlowyNode parentNode)</code></td>
+                                            <td><code>List&lt;FlowyNode&gt;</code></td>
+                                            <td>Gets all direct child nodes of a specific parent node.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>GetChildren(Guid parentId)</code></td>
+                                            <td><code>List&lt;FlowyNode&gt;</code></td>
+                                            <td>Gets all direct child nodes by parent ID. Returns empty list if parent not found.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>GetRootNode()</code></td>
+                                            <td><code>FlowyNode?</code></td>
+                                            <td>Gets the root node of the tree (node with no parent). Returns null if tree is empty.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>GetAllNodes()</code></td>
+                                            <td><code>List&lt;FlowyNode&gt;</code></td>
+                                            <td>Returns a list of all nodes currently in the tree.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>GetNodeCount()</code></td>
+                                            <td><code>int</code></td>
+                                            <td>Returns the total number of nodes in the tree.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>HasNodes()</code></td>
+                                            <td><code>bool</code></td>
+                                            <td>Checks if the tree has any nodes. Returns true if tree is not empty.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>Nodes</code></td>
+                                            <td><code>IReadOnlyList&lt;FlowyNode&gt;</code></td>
+                                            <td>Property providing read-only access to the entire node collection.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🌳 Tree Manipulation Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>AddNodeAsync(string name, string componentId, string color, Guid? parentId, bool isDraggable, bool canHaveChildren)</code></td>
+                                            <td><code>Task&lt;FlowyNode?&gt;</code></td>
+                                            <td>Programmatically adds a new node to the tree. Triggers <code>OnNodeAdded</code> event. All parameters after <code>color</code> are optional.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>RemoveNodeAsync(Guid nodeId)</code></td>
+                                            <td><code>Task&lt;bool&gt;</code></td>
+                                            <td>Removes a node and all its descendants from the tree. Returns true if node was found and removed. Triggers <code>OnNodeRemoved</code> event.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>MoveNodeAsync(Guid nodeId, Guid? newParentId, int position)</code></td>
+                                            <td><code>Task&lt;bool&gt;</code></td>
+                                            <td>Moves a node to a new parent. Position defaults to -1 (end of children list). Triggers <code>OnNodeMoved</code> event.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ResetAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Clears all nodes from the canvas and resets the tree to empty state. Shows placeholder text.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>💾 Import/Export Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>ExportJson()</code></td>
+                                            <td><code>string?</code></td>
+                                            <td>Exports the current tree structure as a formatted JSON string. Includes all nodes, relationships, and metadata. Can be saved to file or database.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ImportJson(string json)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Imports tree structure from a JSON string (previously exported via <code>ExportJson()</code>). Clears current tree and rebuilds from imported data.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🔍 Viewport & Zoom Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>SetZoomLevelAsync(double level)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Sets zoom level to a specific value (0.1 to 3.0). Automatically disables AutoZoom. Triggers <code>ZoomLevelChanged</code> event.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ZoomInAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Increases zoom level by a predefined increment. Disables AutoZoom.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ZoomOutAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Decreases zoom level by a predefined increment. Disables AutoZoom.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ZoomResetAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Resets zoom level to 100% (1.0x). Disables AutoZoom.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>ZoomToFitAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Automatically adjusts zoom to fit all nodes within viewport with padding. One-time operation.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>FitAllNodesInViewportAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Calculates optimal zoom and pan to show all nodes with padding. Does not enable continuous AutoZoom.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SetAutoZoomAsync(bool enabled)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Enables or disables automatic zoom-to-fit behavior. When enabled, canvas automatically zooms on tree changes.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>🎯 Navigation & Positioning Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>CenterAsync()</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Centers the viewport on the root node. Useful after adding nodes or resetting view.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SetAutoCenterAsync(bool enabled)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Enables or disables automatic centering on root node after layout changes.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>PositionAsync(int x, int y)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Moves the viewport to specific pixel coordinates. Useful for custom navigation.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>FocusItemAsync(Guid nodeId)</code></td>
+                                            <td><code>Task&lt;bool&gt;</code></td>
+                                            <td>Centers viewport on a specific node. Returns true if node was found and focused, false otherwise.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SetPanningEnabledAsync(bool enabled)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Enables or disables canvas panning (left-click, space+drag, middle-click drag).</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>⚙️ Configuration & Behavior Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>SetDragDropEnabledAsync(bool enabled)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Enables or disables drag and drop functionality for the entire canvas.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SetNodeDraggableAsync(Guid nodeId, bool draggable)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Sets whether a specific node can be dragged. Useful for locking specific nodes in place.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SetNodeCanHaveChildrenAsync(Guid nodeId, bool canHaveChildren)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Sets whether a specific node can accept child nodes. When false, prevents drops onto this node.</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SetSmoothAsync(bool enabled)</code></td>
+                                            <td><code>Task</code></td>
+                                            <td>Enables or disables smooth animations with momentum physics for panning, zooming, and positioning.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="props-section">
+                            <h3>✨ Visual Effects Methods</h3>
+                            <div class="properties-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Returns</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>FlowDropletsAsync(Guid startNodeId, Guid endNodeId, int duration, int dropletCount, int dropletDelay, double dropletDistance, string easing)</code></td>
+                                            <td><code>Task&lt;bool&gt;</code></td>
+                                            <td>Animates droplets flowing from one node to another through tree connections. Parameters: duration (ms, default: 800), dropletCount (default: 5), dropletDelay (ms, default: 150), dropletDistance (0-1, default: 0), easing (default: "easeInOut"). Returns true if successful.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>📝 Usage Examples</h3>
+                            <div style="display: grid; gap: 24px; margin-top: 16px;">
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--accent-default);">Adding Nodes Programmatically</h4>
+                                    <div class="code-block">
+                                        <pre><code class="language-csharp">// Add root node
+var root = await canvasEditor.AddNodeAsync("CEO", "person", "#667eea");
+
+// Add child node
+var child = await canvasEditor.AddNodeAsync("Manager", "person", "#764ba2", root.Id);
+
+// Add with custom settings
+var locked = await canvasEditor.AddNodeAsync(
+    "Department", "team", "#f093fb", 
+    root.Id, 
+    isDraggable: false, 
+    canHaveChildren: true
+);</code></pre>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--accent-default);">Import/Export Tree State</h4>
+                                    <div class="code-block">
+                                        <pre><code class="language-csharp">// Export to JSON
+var json = canvasEditor.ExportJson();
+await File.WriteAllTextAsync("tree.json", json);
+
+// Import from JSON
+var json = await File.ReadAllTextAsync("tree.json");
+await canvasEditor.ImportJson(json);</code></pre>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--accent-default);">Viewport Control</h4>
+                                    <div class="code-block">
+                                        <pre><code class="language-csharp">// Zoom controls
+await canvasEditor.ZoomInAsync();
+await canvasEditor.SetZoomLevelAsync(1.5);
+await canvasEditor.ZoomToFitAsync();
+
+// Navigate to specific node
+var nodeId = Guid.Parse("...");
+await canvasEditor.FocusItemAsync(nodeId);
+
+// Center on root
+await canvasEditor.CenterAsync();</code></pre>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--accent-default);">Droplet Animation</h4>
+                                    <div class="code-block">
+                                        <pre><code class="language-csharp">// Simple animation
+await canvasEditor.FlowDropletsAsync(startNodeId, endNodeId);
+
+// Advanced animation with custom settings
+await canvasEditor.FlowDropletsAsync(
+    startNodeId, 
+    endNodeId,
+    duration: 1000,
+    dropletCount: 10,
+    dropletDelay: 100,
+    dropletDistance: 0.2,
+    easing: "easeInOutCubic"
+);</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section" style="background: var(--layer-fill-secondary);">
+                            <h3>💡 Best Practices</h3>
+                            <ul>
+                                <li><strong>Async/Await</strong>: All methods are asynchronous - always use <code>await</code> to ensure operations complete</li>
+                                <li><strong>Error Handling</strong>: Wrap method calls in try-catch blocks, especially for I/O operations like Import/Export</li>
+                                <li><strong>Component Reference</strong>: Store a reference to the component using <code>@@ref="canvasEditor"</code> to access methods</li>
+                                <li><strong>State Management</strong>: Use <code>ExportJson()</code> periodically to auto-save user's work</li>
+                                <li><strong>Performance</strong>: For large trees (100+ nodes), disable <code>Smooth</code> animations to improve responsiveness</li>
+                                <li><strong>Validation</strong>: Check return values (bool/null) before proceeding with dependent operations</li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+                else if (activeTab == "code")
+                {
+                    <pre><code class="language-csharp">@("@")page "/examples/features"
+@("@")rendermode InteractiveServer
+@("@")using VIOVNL.Flowy.Blazor.Components
+@("@")using VIOVNL.Flowy.Blazor.Models
+@("@")using VIOVNL.Flowy.Blazor.Services
+@("@")using System.Text.Json
+@("@")inject FlowyTreeService TreeService
+
+&lt;!-- Interactive Controls --&gt;
+&lt;div class="controls-grid"&gt;
+    &lt;div class="control-group"&gt;
+        &lt;label&gt;
+            &lt;input type="checkbox" @("@")bind="enablePanning" /&gt;
+            Enable Panning
+        &lt;/label&gt;
+        &lt;label&gt;
+            &lt;input type="checkbox" @("@")bind="autoZoom" /&gt;
+            Auto Zoom
+        &lt;/label&gt;
+        &lt;input type="range" min="0.5" max="2.0" step="0.05" @("@")bind="zoomLevel" /&gt;
+    &lt;/div&gt;
+    &lt;button @("@")onclick="ExportJson"&gt;💾 Export JSON&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- Canvas with All Features --&gt;
+&lt;div style="display: flex; height: 600px;"&gt;
+    &lt;FlowyComponentsPanel Components="@("@")components" 
+                        Title="Components"
+                        Style="width: 220px;" /&gt;
+    
+    &lt;FlowyCanvasEditor @("@")ref="canvasEditor"
+                     Components="@("@")components"
+                     TreeService="@("@")TreeService"
+                     EnablePanning="@("@")enablePanning"
+                     @("@")bind-AutoZoom="autoZoom"
+                     AutoCenter="@("@")autoCenter"
+                     @("@")bind-ZoomLevel="zoomLevel"
+                     Smooth="@("@")smooth"
+                     Debug="@("@")debug"
+                     EnableDragDrop="@("@")enableDragDrop"
+                     OnNodeDropped="HandleNodeDropped"
+                     OnNodeMoved="HandleNodeMoved"
+                     OnNodeRemoved="HandleNodeRemoved"
+                     Style="flex: 1;" /&gt;
+&lt;/div&gt;
+
+&lt;!-- Event Log --&gt;
+&lt;div class="event-log-panel"&gt;
+    &lt;h4&gt;📊 Event Log&lt;/h4&gt;
+    &lt;div class="event-list"&gt;
+        @("@")foreach (var evt in eventLog.Take(10))
+        {
+            &lt;div class="event-entry"&gt;
+                &lt;span&gt;@("@")evt.Icon&lt;/span&gt;
+                &lt;span&gt;@("@")evt.Time&lt;/span&gt;
+                &lt;span&gt;@("@")evt.Message&lt;/span&gt;
+            &lt;/div&gt;
+        }
+    &lt;/div&gt;
+&lt;/div&gt;
+
+@("@")code {
+    private FlowyCanvasEditor? canvasEditor;
+    private List&lt;FlowyComponentItem&gt; components = new();
+    private List&lt;EventLogEntry&gt; eventLog = new();
+    
+    private bool enablePanning = true;
+    private bool autoZoom = true;
+    private bool autoCenter = true;
+    private double zoomLevel = 1.0;
+    private bool smooth = true;
+    private bool debug = false;
+    private bool enableDragDrop = true;
+    private string? statusMessage;
+    private string? exportedJson;
+
+    protected override void OnInitialized()
+    {
+        // Custom styled components with rich content
+        components = new List&lt;FlowyComponentItem&gt;
+        {
+            new FlowyComponentItem 
+            { 
+                ComponentId = "primary",
+                Name = "Primary",
+                Color = "#667eea",
+                BodyContent = @("@")&lt;div style="display: flex; align-items: center; gap: 8px;"&gt;
+                    &lt;span style="font-size: 20px;"&gt;🔵&lt;/span&gt;
+                    &lt;div&gt;
+                        &lt;div style="font-weight: 700;"&gt;Primary Node&lt;/div&gt;
+                        &lt;div style="font-size: 11px;"&gt;Main category&lt;/div&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            },
+            // ... more styled components
+        };
+    }
+
+    // Event handlers with logging
+    private Task HandleNodeDropped(FlowyNodeDroppedEventArgs args)
+    {
+        AddLog("dropped", "✅", $"Node '{args.Node.Name}' dropped");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleNodeMoved(FlowyNodeMovedEventArgs args)
+    {
+        AddLog("moved", "🔄", $"Node moved");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleNodeRemoved(FlowyNodeRemovedEventArgs args)
+    {
+        AddLog("removed", "❌", $"Node removed");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // JSON serialization
+    private void ExportJson()
+    {
+        var treeData = new FlowyTreeData { Nodes = TreeService.Nodes.ToList() };
+        exportedJson = JsonSerializer.Serialize(treeData, 
+            new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private void AddLog(string type, string icon, string message)
+    {
+        eventLog.Insert(0, new EventLogEntry 
+        { 
+            Type = type, 
+            Icon = icon, 
+            Message = message, 
+            Time = DateTime.Now.ToString("HH:mm:ss") 
+        });
+    }
+
+    private class EventLogEntry
+    {
+        public string Type { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Time { get; set; } = "";
+    }
+}</code></pre>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string activeTab = "installation";
+    private FlowyCanvasEditor? canvasEditor;
+    private List<FlowyComponentItem> components = new();
+    private List<EventLogEntry> eventLog = new();
+    
+    private bool enablePanning = true;
+    private bool autoZoom = true;
+    private bool autoCenter = true;
+    private double zoomLevel = 1.0;
+    private bool smooth = true;
+    private bool debug = false;
+    private bool enableDragDrop = true;
+    private string placeholderText = "✨ Drag components here or use controls below ✨";
+    private string cssClass = "demo-flowy-canvas";
+    private string? exportedJson;
+    private string? selectedComponentId;
+    private string? selectedNodeId;
+    private string? selectedFocusNodeId;
+    private string? advancedNodeId;
+    private string? advancedStatusMessage;
+    private bool enableValidation = false;
+    private string? validationMessage;
+    private string? flowStartNodeId;
+    private string? flowEndNodeId;
+    private bool isFlowing = false;
+    private string? flowErrorMessage;
+    private CancellationTokenSource? flowCancellationSource;
+    private int flowDuration = 800;
+    private int flowDropletCount = 5;
+    private int flowDropletDelay = 150;
+    private double flowDropletDistance = 0;
+    private string flowEasing = "easeInOut";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+     
+            try
+            {
+                await JS.InvokeVoidAsync("eval", "if (typeof Prism !== 'undefined' && Prism.highlightAll) { Prism.highlightAll(); }");
+            }
+            catch
+            {
+                // Prism not loaded yet, will highlight on next render
+            }
+        
+    }
+
+    protected override void OnInitialized()
+    {
+        // Styled components with custom content from StylingExample
+        components = new List<FlowyComponentItem>
+        {
+            new FlowyComponentItem 
+            { 
+                ComponentId = "primary",
+                Name = "Primary",
+                Color = "#667eea",
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">🔵</span>
+                    <div>
+                        <div style="font-weight: 700;">Primary Node</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Main category</div>
+                    </div>
+                </div>
+            },
+            new FlowyComponentItem 
+            { 
+                ComponentId = "success",
+                Name = "Success",
+                Color = "#43e97b",
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">✅</span>
+                    <div>
+                        <div style="font-weight: 700;">Success State</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Completed</div>
+                    </div>
+                </div>
+            },
+            new FlowyComponentItem 
+            { 
+                ComponentId = "warning",
+                Name = "Warning",
+                Color = "#feca57",
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">⚠️</span>
+                    <div>
+                        <div style="font-weight: 700;">Warning</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Attention</div>
+                    </div>
+                </div>
+            },
+            new FlowyComponentItem 
+            { 
+                ComponentId = "danger",
+                Name = "Danger",
+                Color = "#fa709a",
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">❌</span>
+                    <div>
+                        <div style="font-weight: 700;">Critical</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Urgent</div>
+                    </div>
+                </div>
+            },
+            new FlowyComponentItem 
+            { 
+                ComponentId = "info",
+                Name = "Info",
+                Color = "#4facfe",
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">ℹ️</span>
+                    <div>
+                        <div style="font-weight: 700;">Info Node</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Details</div>
+                    </div>
+                </div>
+            },
+            new FlowyComponentItem 
+            { 
+                ComponentId = "locked",
+                Name = "Locked",
+                Color = "#95a5a6",
+                IsDraggable = false,
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">🔒</span>
+                    <div>
+                        <div style="font-weight: 700;">Locked Node</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Cannot be moved</div>
+                    </div>
+                </div>
+            },
+            new FlowyComponentItem 
+            { 
+                ComponentId = "terminal",
+                Name = "Terminal",
+                Color = "#e74c3c",
+                CanHaveChildren = false,
+                BodyContent = @<div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">🛑</span>
+                    <div>
+                        <div style="font-weight: 700;">Terminal Node</div>
+                        <div style="font-size: 11px; opacity: 0.8;">No children allowed</div>
+                    </div>
+                </div>
+            }
+        };
+    }
+
+    // Event handlers from EventsExample
+    private Task HandleNodeDropped(FlowyNodeDroppedEventArgs args)
+    {
+        AddLog("dropped", "✅", $"Node '{args.Node.Name}' dropped on {args.TargetNode?.Name ?? "canvas"} at {args.Position}");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleNodeAdded(FlowyNodeEventArgs args)
+    {
+        AddLog("added", "➕", $"Node '{args.Node.Name}' added programmatically");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleNodeMoved(FlowyNodeMovedEventArgs args)
+    {
+        AddLog("moved", "🔄", $"Node ID {args.NodeId} moved to parent {args.NewParentId?.ToString() ?? "root"}");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleNodeRemoved(FlowyNodeRemovedEventArgs args)
+    {
+        AddLog("removed", "❌", $"Node '{args.Node.Name}' removed");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleNodeSelected(FlowyNodeSelectedEventArgs args)
+    {
+        if (args.Node != null)
+        {
+            AddLog("selected", "👆", $"Node '{args.Node.Name}' selected (previous: {args.PreviousNode?.Name ?? "none"})");
+        }
+        else
+        {
+            AddLog("deselected", "👋", $"Node deselected (was: {args.PreviousNode?.Name ?? "none"})");
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleTreeRestructured(FlowyTreeRestructuredEventArgs args)
+    {
+        if (canvasEditor == null) return Task.CompletedTask;
+        var node = canvasEditor.GetNodeById(args.AffectedNodeId);
+        AddLog("restructured", "🔀", $"Tree restructured: {args.OperationType} on node '{node?.Name ?? "unknown"}'");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleValidateDropTarget(FlowyValidationEventArgs args)
+    {
+        if (!enableValidation)
+        {
+            args.IsValid = true;
+            validationMessage = null;
+            return Task.CompletedTask;
+        }
+
+        // Example validation: "Danger" nodes cannot have "Success" children
+        if (args.TargetNode?.ComponentId == "danger" && args.Node.ComponentId == "success" && args.Position == DropPosition.Under)
+        {
+            args.IsValid = false;
+            args.ValidationMessage = "Danger nodes cannot have Success children!";
+            validationMessage = args.ValidationMessage;
+            AddLog("validation", "⚠️", args.ValidationMessage);
+        }
+        else
+        {
+            args.IsValid = true;
+            validationMessage = null;
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void AddLog(string type, string icon, string message)
+    {
+        eventLog.Insert(0, new EventLogEntry 
+        { 
+            Type = type, 
+            Icon = icon, 
+            Message = message, 
+            Time = DateTime.Now.ToString("HH:mm:ss") 
+        });
+        StateHasChanged();
+    }
+
+    private void ClearLog()
+    {
+        eventLog.Clear();
+        StateHasChanged();
+    }
+
+    // Programmatic controls from AdvancedExample
+    private async Task AddSelectedNode()
+    {
+        if (canvasEditor == null || string.IsNullOrEmpty(selectedComponentId)) return;
+        
+        var component = components.FirstOrDefault(c => c.ComponentId == selectedComponentId);
+        if (component == null) return;
+
+        // Try to add to a random existing node, or create as root if no nodes exist
+        Guid? parentId = null;
+        var nodes = canvasEditor.Nodes;
+        if (nodes.Count > 0)
+        {
+            var random = new Random();
+            var parentNode = nodes[random.Next(nodes.Count)];
+            parentId = parentNode.Id;
+        }
+        
+        var node = await canvasEditor.AddNodeAsync(
+            component.Name, 
+            component.ComponentId, 
+            component.Color, 
+            parentId,
+            component.IsDraggable,
+            component.CanHaveChildren);
+            
+        if (node != null)
+        {
+            AddLog("added", "➕", $"Added '{component.Name}' node{(parentId.HasValue ? " as child" : " as root")}");
+        }
+        StateHasChanged();
+    }
+
+    private async Task RemoveSelectedNode()
+    {
+        if (canvasEditor == null || string.IsNullOrEmpty(selectedNodeId)) return;
+        
+        if (!Guid.TryParse(selectedNodeId, out var nodeId)) return;
+        
+        var node = canvasEditor.GetNodeById(nodeId);
+        if (node == null) return;
+        
+        var nodeName = node.Name;
+        await canvasEditor.RemoveNodeAsync(nodeId);
+        
+        // Clear selection after removal
+        selectedNodeId = null;
+        
+        AddLog("removed", "➖", $"Removed node '{nodeName}' and all its descendants");
+        StateHasChanged();
+    }
+
+    private async Task ResetCanvas()
+    {
+        if (canvasEditor == null) return;
+        
+        await canvasEditor.ResetAsync();
+        AddLog("reset", "🔄", "Canvas reset - all nodes cleared");
+        StateHasChanged();
+    }
+
+    private async Task ZoomIn()
+    {
+        if (canvasEditor == null) return;
+        
+        await canvasEditor.ZoomInAsync();
+        AddLog("zoom", "➕", "Zoomed in");
+        StateHasChanged();
+    }
+
+    private async Task ZoomOut()
+    {
+        if (canvasEditor == null) return;
+        
+        await canvasEditor.ZoomOutAsync();
+        AddLog("zoom", "➖", "Zoomed out");
+        StateHasChanged();
+    }
+
+    private async Task ZoomReset()
+    {
+        if (canvasEditor == null) return;
+        
+        await canvasEditor.ZoomResetAsync();
+        AddLog("zoom", "�", "Zoom reset to 100%");
+        StateHasChanged();
+    }
+
+    private async Task CenterCanvas()
+    {
+        if (canvasEditor == null) return;
+        
+        await canvasEditor.CenterAsync();
+        AddLog("navigation", "🎯", "Canvas centered on root node");
+        StateHasChanged();
+    }
+
+    private async Task FocusSelectedNode()
+    {
+        if (canvasEditor == null || string.IsNullOrEmpty(selectedFocusNodeId)) return;
+        
+        var node = canvasEditor.Nodes.FirstOrDefault(n => n.Id.ToString() == selectedFocusNodeId);
+        if (node == null) return;
+        
+        var focused = await canvasEditor.FocusItemAsync(node.Id);
+        if (focused)
+        {
+            AddLog("navigation", "👁️", $"Focused on node '{node.Name}'");
+            selectedFocusNodeId = string.Empty; // Clear selection after focusing
+        }
+        else
+        {
+            AddLog("error", "❌", "Failed to focus on node");
+        }
+        StateHasChanged();
+    }
+
+    private void ExportJson()
+    {
+        if (canvasEditor == null) return;
+        
+        exportedJson = canvasEditor.ExportJson();
+        if (!string.IsNullOrEmpty(exportedJson))
+        {
+            AddLog("export", "�", $"Exported {canvasEditor.Nodes.Count} nodes to JSON");
+        }
+        StateHasChanged();
+    }
+
+    private async Task ImportJson()
+    {
+        if (canvasEditor == null) return;
+        
+        // Use the exported JSON if available, otherwise show message
+        if (string.IsNullOrEmpty(exportedJson))
+        {
+            AddLog("import", "⚠️", "No exported JSON available. Export first, then import.");
+            StateHasChanged();
+            return;
+        }
+        
+        await canvasEditor.ImportJson(exportedJson);
+        var nodeCount = canvasEditor.Nodes.Count;
+        AddLog("import", "📥", $"Imported tree from JSON ({nodeCount} nodes)");
+        StateHasChanged();
+    }
+
+    private async Task FitToScreen()
+    {
+        if (canvasEditor != null)
+        {
+            await canvasEditor.FitAllNodesInViewportAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleNodeDraggable()
+    {
+        if (canvasEditor == null || string.IsNullOrEmpty(advancedNodeId)) return;
+        if (!Guid.TryParse(advancedNodeId, out var nodeId)) return;
+        
+        var node = canvasEditor.GetNodeById(nodeId);
+        if (node == null) return;
+
+        var newState = !node.IsDraggable;
+        await canvasEditor.SetNodeDraggableAsync(nodeId, newState);
+        advancedStatusMessage = $"Node '{node.Name}' is now {(newState ? "draggable" : "locked")}";
+        AddLog("property", "🔧", advancedStatusMessage);
+        StateHasChanged();
+    }
+
+    private async Task ToggleNodeCanHaveChildren()
+    {
+        if (canvasEditor == null || string.IsNullOrEmpty(advancedNodeId)) return;
+        if (!Guid.TryParse(advancedNodeId, out var nodeId)) return;
+        
+        var node = canvasEditor.GetNodeById(nodeId);
+        if (node == null) return;
+
+        var newState = !node.CanHaveChildren;
+        await canvasEditor.SetNodeCanHaveChildrenAsync(nodeId, newState);
+        advancedStatusMessage = $"Node '{node.Name}' {(newState ? "can" : "cannot")} have children";
+        AddLog("property", "🔧", advancedStatusMessage);
+        StateHasChanged();
+    }
+
+    private async Task StartFlow()
+    {
+        if (canvasEditor == null || string.IsNullOrEmpty(flowStartNodeId) || string.IsNullOrEmpty(flowEndNodeId))
+            return;
+
+        if (!Guid.TryParse(flowStartNodeId, out var startId) || !Guid.TryParse(flowEndNodeId, out var endId))
+            return;
+
+        var startNode = canvasEditor.GetNodeById(startId);
+        var endNode = canvasEditor.GetNodeById(endId);
+
+        if (startNode == null || endNode == null)
+        {
+            flowErrorMessage = "Invalid node selection";
+            StateHasChanged();
+            return;
+        }
+
+        isFlowing = true;
+        flowErrorMessage = null;
+        flowCancellationSource = new CancellationTokenSource();
+        AddLog("flow", "💧", $"Starting flow from '{startNode.Name}' to '{endNode.Name}'");
+        StateHasChanged();
+
+        try
+        {
+            // Run flow animation in a loop until stopped
+            while (!flowCancellationSource.Token.IsCancellationRequested)
+            {
+                var success = await canvasEditor.FlowDropletsAsync(
+                    startId,
+                    endId,
+                    duration: flowDuration,
+                    dropletCount: flowDropletCount,
+                    dropletDelay: flowDropletDelay,
+                    dropletDistance: flowDropletDistance,
+                    easing: flowEasing
+                );
+
+                if (!success)
+                {
+                    flowErrorMessage = "No path found between nodes";
+                    AddLog("flow", "❌", "Flow failed: No path found");
+                    break;
+                }
+
+                // Wait a bit before starting next cycle
+                await Task.Delay(500, flowCancellationSource.Token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Flow was stopped, this is expected
+        }
+        finally
+        {
+            isFlowing = false;
+            flowCancellationSource?.Dispose();
+            flowCancellationSource = null;
+            AddLog("flow", "⏹️", "Flow stopped");
+            StateHasChanged();
+        }
+    }
+
+    private void StopFlow()
+    {
+        flowCancellationSource?.Cancel();
+    }
+
+    private class EventLogEntry
+    {
+        public string Type { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Time { get; set; } = "";
+    }
+}

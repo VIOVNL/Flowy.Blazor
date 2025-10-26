@@ -1,0 +1,311 @@
+/**
+ * VIOVNL.Flowy.Blazor - Flow Node Styling
+ * 
+ * Defines the visual appearance and interactions for tree nodes on the canvas.
+ * Nodes are card-based UI elements with:
+ * - Colored header with title
+ * - Body content area (rendered from RenderFragment)
+ * - Connection points (input/output connectors)
+ * - Reorder arrows (promote/demote buttons)
+ * - Drag and drop interactions
+ * 
+ * Node Structure:
+ * .flow-node
+ *   ├─ .node-header (colored top bar)
+ *   │  └─ .node-title (node name)
+ *   ├─ .node-body (content area)
+ *   │  └─ .node-body-html (rendered RenderFragment)
+ *   ├─ .node-connector.node-connector-in (top connection point)
+ *   ├─ .node-connector.node-connector-out (bottom connection point)
+ *   └─ .node-reorder-arrows (promote/demote buttons)
+ *      ├─ .arrow-btn.arrow-up (promote)
+ *      └─ .arrow-btn.arrow-down (demote)
+ */
+
+/* ========================================
+   FLOW NODE - Base Styling
+   Card-based node element positioned absolutely within canvas
+   ======================================== */
+
+.flow-node {
+    /* Positioning and dimensions */
+    position: absolute;
+    width: 200px; /* Fixed width for consistent tree layout */
+    
+    /* Visual styling - card appearance following Fluent UI 2 */
+    background: var(--colorNeutralBackground1);
+    border-radius: var(--borderRadiusMedium);
+    box-shadow: var(--shadow8);
+    border: 1px solid var(--colorNeutralStroke2);
+    
+    /* Interactive cursor for dragging */
+    cursor: grab;
+    
+    /* Smooth transitions for hover and drag states */
+    transition: box-shadow 0.3s ease, transform 0.2s ease, border-color 0.2s ease;
+    
+    /* Layering above connections and background */
+    z-index: 10;
+    
+    /* Prevent text selection during drag */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Disable grab cursor when drag & drop is disabled globally */
+.canvas-viewport.drag-disabled .flow-node {
+    cursor: default;
+}
+
+/* Hover effect - scale up with border highlight (only when dragging with ghost) */
+body:has(.drag-ghost) .flow-node:hover:not(.no-children) {
+    box-shadow: var(--shadow16);
+    transform: scale(1.1);
+    border: 2px solid var(--node-color);
+}
+
+/* Show not-allowed cursor when dragging over nodes that cannot have children */
+body:has(.drag-ghost) .flow-node.no-children:hover {
+    cursor: not-allowed !important;
+}
+
+/* Normal hover effect (when NOT dragging) */
+body:not(:has(.drag-ghost)) .flow-node:hover {
+    box-shadow: var(--shadow16);
+    transform: translateY(-1px);
+    border-color: var(--colorNeutralStroke1);
+}
+
+/* Dragging state - reduced opacity and strong shadow */
+.flow-node.dragging {
+    opacity: 0.6;
+    pointer-events: none; /* Prevent interaction during drag */
+    cursor: grabbing;
+    box-shadow: var(--shadow28);
+}
+
+/* Selected node state - highlighted border and shadow */
+.flow-node.flowy-node--selected {
+    border: 2px solid var(--colorBrandBackground);
+    box-shadow: var(--shadow16), 0 0 0 2px rgba(0, 120, 212, 0.2);
+    transform: scale(1.02);
+}
+
+/* Non-draggable node state (isDraggable = false) - only show not-allowed when NOT dragging a ghost */
+body:not(:has(.drag-ghost)) .flow-node.not-draggable {
+    cursor: not-allowed;
+}
+
+/* When dragging with ghost, not-draggable nodes can still receive children */
+body:has(.drag-ghost) .flow-node.not-draggable {
+    cursor: grabbing;
+}
+
+/* Terminal node style (canHaveChildren = false) - hides output connector */
+.flow-node.no-children .node-connector-out {
+    display: none !important;
+}
+
+/* ========================================
+   NODE HEADER - Colored Title Bar
+   Top section with node name and color coding
+   ======================================== */
+
+.node-header {
+    /* Layout */
+    padding: var(--spacingHorizontalM);
+    display: flex;
+    align-items: center;
+    gap: var(--spacingHorizontalS);
+    
+    /* Visual styling */
+    border-radius: var(--borderRadiusMedium) var(--borderRadiusMedium) 0 0;
+    background: var(--node-color, var(--colorBrandBackground)); /* Color from node data */
+    color: white; /* High contrast text on colored background */
+    font-weight: var(--fontWeightSemibold);
+    
+    /* Subtle bottom border for depth */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Node title text */
+.node-title {
+    flex: 1;
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
+    line-height: 20px;
+}
+
+/* ========================================
+   NODE BODY - Content Area
+   Contains rendered RenderFragment from Blazor
+   ======================================== */
+
+.node-body {
+    /* Layout and spacing */
+    padding: var(--spacingHorizontalM);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacingHorizontalS);
+}
+
+/* Rendered HTML content from RenderFragment */
+.node-body-html {
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground2);
+    font-weight: var(--fontWeightRegular);
+    line-height: 16px;
+}
+
+/* ========================================
+   NODE CONNECTORS - Connection Points
+   Visual indicators for parent/child relationships
+   ======================================== */
+
+.node-connector {
+    /* Positioning and sizing */
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    
+    /* Visual styling - circular dot with ring */
+    background: var(--colorNeutralBackground1);
+    border: 2px solid var(--node-color, var(--colorBrandBackground));
+    border-radius: 50%;
+    
+    /* Smooth transitions */
+    transition: all var(--durationFast) var(--curveEasyEase);
+    
+    /* Layering above node but below drag ghost */
+    z-index: 20;
+    
+    /* Non-interactive (connections are drawn between them) */
+    pointer-events: none;
+    
+    /* Subtle elevation */
+    box-shadow: var(--shadow2);
+}
+
+/* Enlarge connectors on node hover for visibility */
+.flow-node:hover .node-connector {
+    transform: scale(1.2);
+    box-shadow: var(--shadow4);
+}
+
+/* Input connector - top center (parent connection point) */
+.node-connector-in {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Output connector - bottom center (child connection point) */
+.node-connector-out {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Maintain centering when enlarging on hover */
+.flow-node:hover .node-connector-in {
+    transform: translateX(-50%) scale(1.2);
+}
+
+.flow-node:hover .node-connector-out {
+    transform: translateX(-50%) scale(1.2);
+}
+
+/* Drop target highlight - active when dragging over valid target */
+.node-connector-out.drop-target-active {
+    background: #3b82f6 !important;         /* Bright blue fill */
+    border-color: #1e40af !important;       /* Dark blue border */
+    transform: translateX(-50%) scale(1.4) !important; /* Enlarged */
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6) !important; /* Glowing shadow */
+    animation: pulseBlue 0.6s ease-in-out infinite; /* Pulsing effect */
+}
+
+/* ========================================
+   NODE REORDER ARROWS - Promote/Demote Buttons
+   Appear on hover, allow tree restructuring
+   ======================================== */
+
+.node-reorder-arrows {
+    /* Positioning - right side of node */
+    position: absolute;
+    right: -45px;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    /* Layout */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    
+    /* Hidden by default, shown on node hover */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Show arrows when hovering over node */
+.flow-node:hover .node-reorder-arrows {
+    opacity: 1;
+}
+
+/* Individual arrow button */
+.arrow-btn {
+    /* Sizing */
+    width: 28px;
+    height: 28px;
+    
+    /* Visual styling - small circular button */
+    border: 1px solid var(--colorNeutralStroke1);
+    background: var(--colorNeutralBackground1);
+    border-radius: var(--borderRadiusSmall);
+    box-shadow: var(--shadow2);
+    
+    /* Interactive cursor */
+    cursor: pointer;
+    
+    /* Layout - center arrow icon */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Typography */
+    font-size: 14px;
+    font-weight: var(--fontWeightSemibold);
+    color: var(--colorNeutralForeground2);
+    
+    /* Smooth transitions */
+    transition: all var(--durationFast) var(--curveEasyEase);
+}
+
+/* Hover effect - highlight and elevate */
+.arrow-btn:hover {
+    background: var(--colorNeutralBackground3);
+    border-color: var(--colorNeutralForeground2);
+    color: var(--colorNeutralForeground1);
+    box-shadow: var(--shadow4);
+}
+
+/* Active (mousedown) effect - press down */
+.arrow-btn:active {
+    transform: scale(0.96);
+}
+
+/* Disabled state - reduced opacity and no interaction */
+.arrow-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Remove hover effects for disabled buttons */
+.arrow-btn:disabled:hover {
+    background: var(--colorNeutralBackground1);
+    border-color: var(--colorNeutralStroke1);
+    color: var(--colorNeutralForeground2);
+    transform: scale(1);
+    box-shadow: var(--shadow2);
+}

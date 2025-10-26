@@ -1,0 +1,32 @@
+@inherits LayoutComponentBase
+@using VIOVNL.Flowy.Demo.Components.Shared
+
+<div class="app-container">
+    <nav class="sidebar">
+        <div class="logo">
+            <h2>🌊 VIOVNL.Flowy.Blazor</h2>
+            <p class="version">v1.0.0</p>
+        </div>
+
+        <div class="nav-section">
+            <NavLink href="/" Match="NavLinkMatch.All">
+                <span class="icon">🏠</span> Home
+            </NavLink>
+        </div>
+
+        <HireButton />
+
+   <div class="nav-footer">
+            <a href="https://github.com/VIOVNL/Flowy" target="_blank" class="github-link">
+                <span class="icon">💻</span> GitHub
+            </a>
+            <a href="https://www.nuget.org/packages/VIOVNL.Flowy.Blazor/" target="_blank" class="nuget-link">
+                <span class="icon">📦</span> NuGet
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @Body
+    </main>
+</div>

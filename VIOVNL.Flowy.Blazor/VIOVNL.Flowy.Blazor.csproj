@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    
+    <!-- NuGet Package Properties -->
+    <PackageId>VIOVNL.Flowy.Blazor</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>VIOVNL</Authors>
+    <Company>VIOVNL</Company>
+    <Product>Flowy Blazor Component Library</Product>
+    <Description>A beautiful and interactive hierarchical family tree builder component for Blazor applications. Features drag-and-drop functionality, automatic layout, visual drop zones, and JSON serialization.</Description>
+    <PackageTags>blazor;component;tree;family-tree;drag-drop;hierarchy;canvas;flow-builder</PackageTags>
+    <PackageProjectUrl>https://github.com/VIOVNL/Flowy.Blazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/VIOVNL/Flowy.Blazor</RepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    
+    <!-- Enable static web assets -->
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Include wwwroot files as static web assets -->
+    <Content Update="wwwroot\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Package readme, license and icon -->
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+    <!--<None Include="icon.png" Pack="true" PackagePath="\" />-->
+  </ItemGroup>
+
+</Project>

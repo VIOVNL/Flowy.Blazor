@@ -1,0 +1,95 @@
+/**
+ * VIOVNL.Flowy.Blazor - Theme System
+ * 
+ * Provides dark theme and system preference support.
+ * Themes are applied via data attributes ([data-theme="dark"]) or system preferences.
+ * 
+ * Theme Priority:
+ * 1. Explicit data-theme attribute (user preference)
+ * 2. System preference via prefers-color-scheme media query
+ * 3. Light theme (default)
+ */
+
+/* ========================================
+   DARK THEME - Explicit
+   Applied when [data-theme="dark"] is set on root element
+   ======================================== */
+
+[data-theme="dark"],
+:root.dark-theme {
+    /* ----------------------------------------
+       Dark Theme Color Overrides
+       ---------------------------------------- */
+    
+    /* Neutral Foreground - Inverted for dark backgrounds */
+    --colorNeutralForeground1: #ffffff;  /* White text for maximum contrast */
+    --colorNeutralForeground2: #e0e0e0;  /* Light gray for secondary text */
+    --colorNeutralForeground3: #c7c7c7;  /* Medium gray for tertiary text */
+    
+    /* Neutral Background - Dark surface colors */
+    --colorNeutralBackground1: #1f1f1f;  /* Primary dark surface */
+    --colorNeutralBackground2: #292929;  /* Secondary dark surface - slightly lighter */
+    --colorNeutralBackground3: #333333;  /* Tertiary dark surface - more visible contrast */
+    
+    /* Neutral Stroke - Lighter borders for dark theme */
+    --colorNeutralStroke1: #5c5c5c;      /* Primary borders - visible on dark */
+    --colorNeutralStroke2: #4a4a4a;      /* Secondary borders - subtle on dark */
+    
+    /* ----------------------------------------
+       Dark Theme Brand Colors
+       ---------------------------------------- */
+    
+    /* Brand colors are brighter in dark mode for better visibility */
+    --colorBrandBackground: #479ef5;       /* Brighter blue for dark backgrounds */
+    --colorBrandBackgroundHover: #62aafc;  /* Even brighter on hover */
+    
+    /* ----------------------------------------
+       Dark Theme Shadows
+       ---------------------------------------- */
+    
+    /* Shadows are softer and more pronounced in dark theme */
+    --shadow2: 0 0 2px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.28);
+    --shadow4: 0 0 2px rgba(0, 0, 0, 0.24), 0 2px 4px rgba(0, 0, 0, 0.28);
+    --shadow8: 0 0 2px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);
+    --shadow16: 0 0 2px rgba(0, 0, 0, 0.24), 0 8px 16px rgba(0, 0, 0, 0.28);
+    --shadow28: 0 0 8px rgba(0, 0, 0, 0.24), 0 14px 28px rgba(0, 0, 0, 0.36);
+}
+
+/* ========================================
+   DARK THEME - System Preference
+   Applied when user's OS is set to dark mode
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+    /* Only apply if no explicit theme is set (respects user override) */
+    :root:not([data-theme="light"]) {
+        /* ----------------------------------------
+           Auto Dark Mode Color Overrides
+           ---------------------------------------- */
+        
+        /* Neutral Foreground */
+        --colorNeutralForeground1: #ffffff;
+        --colorNeutralForeground2: #e0e0e0;
+        --colorNeutralForeground3: #c7c7c7;
+        
+        /* Neutral Background */
+        --colorNeutralBackground1: #1f1f1f;
+        --colorNeutralBackground2: #292929;
+        --colorNeutralBackground3: #333333;
+        
+        /* Neutral Stroke */
+        --colorNeutralStroke1: #5c5c5c;
+        --colorNeutralStroke2: #4a4a4a;
+        
+        /* Brand Colors */
+        --colorBrandBackground: #479ef5;
+        --colorBrandBackgroundHover: #62aafc;
+        
+        /* Shadows */
+        --shadow2: 0 0 2px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.28);
+        --shadow4: 0 0 2px rgba(0, 0, 0, 0.24), 0 2px 4px rgba(0, 0, 0, 0.28);
+        --shadow8: 0 0 2px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);
+        --shadow16: 0 0 2px rgba(0, 0, 0, 0.24), 0 8px 16px rgba(0, 0, 0, 0.28);
+        --shadow28: 0 0 8px rgba(0, 0, 0, 0.24), 0 14px 28px rgba(0, 0, 0, 0.36);
+    }
+}

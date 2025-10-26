@@ -1,0 +1,103 @@
+/**
+ * VIOVNL.Flowy.Blazor - Animations and Transitions
+ * 
+ * Defines keyframe animations and transition effects used throughout the component.
+ * Animations provide visual feedback and improve perceived performance.
+ * 
+ * Animation Principles:
+ * - Use easing curves for natural motion (avoid linear)
+ * - Keep durations short for responsiveness (150-300ms)
+ * - Provide meaningful feedback (not just decoration)
+ * - Consider reduced motion preferences
+ */
+
+/* ========================================
+   CANVAS PLACEHOLDER ANIMATION
+   Gentle pulsing effect for empty state message
+   ======================================== */
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.4;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1.01);
+    }
+}
+
+/* ========================================
+   DRAG GHOST APPEARANCE ANIMATION
+   Smooth fade-in and scale-up when ghost is created
+   ======================================== */
+
+@keyframes ghostAppear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* ========================================
+   NODE APPEARANCE ANIMATION
+   Applied when new nodes are added to canvas
+   ======================================== */
+
+@keyframes nodeAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Apply node appearance animation to all flow nodes */
+.flow-node {
+    animation: nodeAppear var(--durationNormal) var(--curveDecelerateMin);
+}
+
+/* ========================================
+   DROP TARGET PULSE ANIMATION
+   Pulsing glow effect for active drop zones
+   ======================================== */
+
+@keyframes pulseBlue {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6);
+    }
+    50% {
+        box-shadow: 0 6px 24px rgba(59, 130, 246, 0.8);
+    }
+}
+
+/* ========================================
+   FLOW DROPLET ANIMATION
+   Styling for animated droplets flowing through connections
+   ======================================== */
+
+.flow-droplet {
+    /* Droplet is animated via JavaScript transform */
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+/* Smooth entrance for droplets */
+@keyframes dropletFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+

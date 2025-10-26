@@ -1,0 +1,47 @@
+@using VIOVNL.Flowy.Blazor.Models
+
+<div class="components-panel @CssClass" style="@Style">
+    <h3>@Title</h3>
+    <div class="component-list">
+        @foreach (var component in Components.Where(c => c.IsEnabled))
+        {
+            <div class="component-item" 
+                 style="--item-color: @component.Color;"
+                 data-component-id="@component.ComponentId">
+                <div class="component-info">
+                    <div class="component-name">@component.Name</div>
+                    @if (component.BodyContent != null)
+                    {
+                        <div class="component-type">@component.BodyContent</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// List of components to display in the panel
+    /// </summary>
+    [Parameter]
+    public List<FlowyComponentItem> Components { get; set; } = new();
+
+    /// <summary>
+    /// Panel title
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "⚡ Components";
+
+    /// <summary>
+    /// Additional CSS class
+    /// </summary>
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Additional inline styles
+    /// </summary>
+    [Parameter]
+    public string? Style { get; set; }
+}

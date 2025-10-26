@@ -1,0 +1,84 @@
+@inject IJSRuntime JSRuntime
+
+<button class="theme-toggle" @onclick="ToggleTheme" title="@(isDarkTheme ? "Switch to Light Theme" : "Switch to Dark Theme")">
+    @if (isDarkTheme)
+    {
+        <span>☀️</span>
+    }
+    else
+    {
+        <span>🌙</span>
+    }
+</button>
+
+@code {
+    private bool isDarkTheme = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Check localStorage first, then fall back to system preference
+                var savedTheme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "theme");
+                
+                if (!string.IsNullOrEmpty(savedTheme))
+                {
+                    // Use saved preference
+                    isDarkTheme = savedTheme == "dark";
+                }
+                else
+                {
+                    // Detect system theme preference
+                    var prefersDark = await JSRuntime.InvokeAsync<bool>("eval", 
+                        "window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches");
+                    isDarkTheme = prefersDark;
+                }
+                
+                // Apply the theme immediately
+                await ApplyTheme();
+                
+                StateHasChanged();
+            }
+            catch
+            {
+                // Ignore errors during pre-rendering
+            }
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkTheme = !isDarkTheme;
+        await ApplyTheme();
+        
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", isDarkTheme ? "dark" : "light");
+        }
+        catch
+        {
+            // Ignore if localStorage is not available
+        }
+    }
+    
+    private async Task ApplyTheme()
+    {
+        try
+        {
+            if (isDarkTheme)
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.setAttribute('data-theme', 'dark')");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.removeAttribute('data-theme')");
+            }
+        }
+        catch
+        {
+            // Ignore if JS is not ready
+        }
+    }
+}

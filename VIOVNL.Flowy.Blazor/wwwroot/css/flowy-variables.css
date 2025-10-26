@@ -1,0 +1,91 @@
+/**
+ * VIOVNL.Flowy.Blazor - Design System Variables
+ * 
+ * This file defines the core design tokens following Microsoft Fluent UI 2 design system.
+ * All colors, spacing, typography, shadows, and timing values are centralized here
+ * for consistent theming across the component library.
+ * 
+ * Design System Reference: https://fluent2.microsoft.design/
+ */
+
+:root {
+    /* ========================================
+       FLUENT UI 2 - COLOR SYSTEM (LIGHT THEME)
+       ======================================== */
+    
+    /* Neutral Foreground - Text colors with semantic hierarchy */
+    --colorNeutralForeground1: #242424;  /* Primary text - highest emphasis */
+    --colorNeutralForeground2: #424242;  /* Secondary text - medium emphasis */
+    --colorNeutralForeground3: #616161;  /* Tertiary text - low emphasis, hints */
+    
+    /* Neutral Background - Surface colors with elevation system */
+    --colorNeutralBackground1: #ffffff;  /* Primary surface - cards, dialogs */
+    --colorNeutralBackground2: #fafafa;  /* Secondary surface - slight contrast */
+    --colorNeutralBackground3: #f5f5f5;  /* Tertiary surface - backgrounds, disabled states */
+    
+    /* Neutral Stroke - Border and divider colors */
+    --colorNeutralStroke1: #d1d1d1;      /* Primary borders - visible separation */
+    --colorNeutralStroke2: #e0e0e0;      /* Secondary borders - subtle separation */
+    
+    /* Brand Colors - Primary accent color for interactive elements */
+    --colorBrandBackground: #0078d4;       /* Primary brand color - buttons, links */
+    --colorBrandBackgroundHover: #106ebe;  /* Hover state - slightly darker for feedback */
+    
+    /* ========================================
+       FLUENT UI 2 - ELEVATION SYSTEM
+       ======================================== */
+    
+    /* Shadow tokens provide depth hierarchy through elevation levels */
+    --shadow2: 0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);    /* Minimal elevation - tooltips */
+    --shadow4: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);    /* Low elevation - cards at rest */
+    --shadow8: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);    /* Medium elevation - raised cards */
+    --shadow16: 0 0 2px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.14);  /* High elevation - modals */
+    --shadow28: 0 0 8px rgba(0, 0, 0, 0.12), 0 14px 28px rgba(0, 0, 0, 0.18); /* Maximum elevation - overlays */
+    
+    /* ========================================
+       FLUENT UI 2 - BORDER RADIUS
+       ======================================== */
+    
+    /* Consistent corner rounding creates visual cohesion */
+    --borderRadiusSmall: 4px;   /* Small radius - buttons, tags */
+    --borderRadiusMedium: 8px;  /* Medium radius - cards, panels (primary choice) */
+    
+    /* ========================================
+       FLUENT UI 2 - SPACING SCALE
+       ======================================== */
+    
+    /* Horizontal spacing tokens based on 4px grid system */
+    --spacingHorizontalXXS: 2px;   /* Extra extra small - tight spacing */
+    --spacingHorizontalS: 8px;     /* Small - compact layouts */
+    --spacingHorizontalM: 12px;    /* Medium - standard spacing */
+    --spacingHorizontalL: 16px;    /* Large - comfortable spacing */
+    --spacingHorizontalXL: 20px;   /* Extra large - section headers */
+    
+    /* ========================================
+       FLUENT UI 2 - TYPOGRAPHY SYSTEM
+       ======================================== */
+    
+    /* Font family stack prioritizes system fonts for optimal rendering */
+    --fontFamilyBase: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', sans-serif;
+    
+    /* Font size tokens follow Fluent UI 2 type ramp */
+    --fontSizeBase300: 12px;    /* Small text - captions, metadata */
+    --fontSizeBase400: 14px;    /* Base text - body copy, UI elements */
+    --fontSizeHero700: 20px;    /* Large text - section headers, titles */
+    
+    /* Font weight tokens for typographic hierarchy */
+    --fontWeightRegular: 400;   /* Regular weight - body text */
+    --fontWeightSemibold: 600;  /* Semibold weight - headings, emphasis */
+    
+    /* ========================================
+       FLUENT UI 2 - MOTION SYSTEM
+       ======================================== */
+    
+    /* Duration tokens control animation timing */
+    --durationFast: 150ms;      /* Fast transitions - micro-interactions */
+    --durationNormal: 200ms;    /* Normal transitions - most UI changes */
+    
+    /* Easing curves create natural, physics-based motion */
+    --curveDecelerateMin: cubic-bezier(0, 0, 0.2, 1);    /* Decelerate - elements entering viewport */
+    --curveEasyEase: cubic-bezier(0.33, 0, 0.67, 1);     /* Easy ease - general purpose easing */
+}

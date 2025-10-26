@@ -1,0 +1,128 @@
+name: Publish to NuGet
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - 'VIOVNL.Flowy.Blazor/**'
+      - '.github/workflows/publish-nuget.yml'
+  workflow_dispatch:
+    inputs:
+      version_increment:
+        description: 'Version increment type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Get current version
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(grep -oP '<Version>\K[^<]+' VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: calc_version
+        run: |
+          CURRENT_VERSION="${{ steps.get_version.outputs.current_version }}"
+          INCREMENT_TYPE="${{ github.event.inputs.version_increment || 'patch' }}"
+          
+          IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+          
+          if [ "$INCREMENT_TYPE" == "major" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [ "$INCREMENT_TYPE" == "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Update version in project file
+        run: |
+          NEW_VERSION="${{ steps.calc_version.outputs.new_version }}"
+          sed -i "s|<Version>.*</Version>|<Version>$NEW_VERSION</Version>|g" VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj
+          echo "Updated project file to version $NEW_VERSION"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack NuGet package
+        run: dotnet pack VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj --configuration Release --no-build --output ./nupkg
+
+      - name: List package contents
+        run: |
+          echo "Generated packages:"
+          ls -la ./nupkg/
+
+      - name: Publish to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+      - name: Commit version update
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj
+          git commit -m "chore: bump version to ${{ steps.calc_version.outputs.new_version }}" || echo "No changes to commit"
+          git push
+
+      - name: Create Git tag
+        run: |
+          git tag "v${{ steps.calc_version.outputs.new_version }}"
+          git push origin "v${{ steps.calc_version.outputs.new_version }}"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.calc_version.outputs.new_version }}
+          release_name: Release v${{ steps.calc_version.outputs.new_version }}
+          body: |
+            ## VIOVNL.Flowy.Blazor v${{ steps.calc_version.outputs.new_version }}
+            
+            Published to NuGet: https://www.nuget.org/packages/VIOVNL.Flowy.Blazor/${{ steps.calc_version.outputs.new_version }}
+            
+            ### Changes
+            - Automated release from GitHub Actions
+          draft: false
+          prerelease: false

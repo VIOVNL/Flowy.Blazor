@@ -1,0 +1,65 @@
+/**
+ * VIOVNL.Flowy.Blazor - Connection Lines
+ * 
+ * SVG-based connection lines between parent and child nodes.
+ * Lines use cubic Bézier curves for smooth, organic appearance.
+ * 
+ * Connection Rendering:
+ * - Lines are drawn as SVG <path> elements with cubic Bézier curves
+ * - Start point: parent node's bottom connector (.node-connector-out)
+ * - End point: child node's top connector (.node-connector-in)
+ * - Control points calculated for smooth S-curve appearance
+ * 
+ * Visual Properties:
+ * - Default stroke width: 3px (readable but not dominant)
+ * - Hover stroke width: 8px (emphasizes relationship)
+ * - Rounded line caps and joins for polished appearance
+ * - Drop shadow on hover for elevation effect
+ */
+
+/* ========================================
+   CONNECTIONS SVG CONTAINER
+   SVG canvas for all connection lines
+   ======================================== */
+
+.connections-svg {
+    /* Positioning - fill transform wrapper */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Allow SVG elements to extend beyond container bounds */
+    overflow: visible;
+    
+    /* Layering - behind nodes, above background */
+    z-index: 0;
+    
+    /* Non-interactive (clicks pass through to canvas) */
+    pointer-events: none;
+}
+
+/* ========================================
+   CONNECTION LINE - Individual Path
+   SVG path element representing parent-child relationship
+   ======================================== */
+
+.connection-line {
+    /* Smooth transitions for visual changes */
+    transition: stroke 0.3s ease, stroke-width 0.3s ease, filter 0.3s ease;
+    
+    /* Line cap and join styles for polished appearance */
+    stroke-linecap: round;  /* Rounded ends (softer than default square) */
+    stroke-linejoin: round; /* Rounded corners at joints */
+    
+    /* Note: stroke color, stroke-width, and path data (d attribute) set via JavaScript */
+    /* Default stroke: #667eea (brand color) */
+    /* Default stroke-width: 3px */
+}
+
+/* Hover effect - thicker line with drop shadow */
+.connection-line:hover {
+    stroke-width: 8 !important;                           /* Increase width for emphasis */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));  /* Subtle elevation */
+}

@@ -1,0 +1,1087 @@
+@using VIOVNL.Flowy.Blazor.Models
+@using VIOVNL.Flowy.Blazor.Services
+@using VIOVNL.Flowy.Blazor.Helpers
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Web.HtmlRendering
+@using Microsoft.Extensions.Logging
+@inject IJSRuntime JS
+@inject IServiceProvider ServiceProvider
+@inject ILoggerFactory LoggerFactory
+@implements IAsyncDisposable
+
+<div class="canvas-panel @CssClass" style="@(Style ?? "width: 100%; height: 100%")">
+    <div class="canvas-area">
+        <div class="canvas-viewport" id="@CanvasId">
+            <div class="canvas-transform-wrapper" id="@($"{CanvasId}-transform")">
+                <p class="canvas-placeholder">@PlaceholderText</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string CanvasId = $"flowy-canvas-{Guid.NewGuid():N}";
+    private DotNetObjectReference<FlowyCanvasEditor>? _dotNetRef;
+    private IJSObjectReference? _jsModule;
+
+    /// <summary>
+    /// List of components available for drag and drop
+    /// </summary>
+    [Parameter]
+    public List<FlowyComponentItem> Components { get; set; } = new();
+
+    /// <summary>
+    /// Internal tree service for managing node state. Use component methods instead of accessing directly.
+    /// </summary>
+    private FlowyTreeService _treeService = new();
+
+    /// <summary>
+    /// Gets all nodes in the tree. Read-only access to the node collection.
+    /// </summary>
+    public IReadOnlyList<FlowyNode> Nodes => _treeService.Nodes;
+
+    /// <summary>
+    /// Gets a node by its unique identifier
+    /// </summary>
+    /// <param name="nodeId">The GUID of the node to retrieve</param>
+    /// <returns>The node if found, null otherwise</returns>
+    public FlowyNode? GetNodeById(Guid nodeId) => _treeService.GetNodeById(nodeId);
+
+    /// <summary>
+    /// Gets all child nodes of a specific parent node
+    /// </summary>
+    /// <param name="parentNode">The parent node</param>
+    /// <returns>List of child nodes</returns>
+    public List<FlowyNode> GetChildren(FlowyNode parentNode) => _treeService.GetChildren(parentNode);
+
+    /// <summary>
+    /// Gets all child nodes by parent ID
+    /// </summary>
+    /// <param name="parentId">The GUID of the parent node</param>
+    /// <returns>List of child nodes</returns>
+    public List<FlowyNode> GetChildren(Guid parentId)
+    {
+        var parent = _treeService.GetNodeById(parentId);
+        return parent != null ? _treeService.GetChildren(parent) : new List<FlowyNode>();
+    }
+
+    /// <summary>
+    /// Gets the root node of the tree
+    /// </summary>
+    /// <returns>The root node, or null if tree is empty</returns>
+    public FlowyNode? GetRootNode() => _treeService.Nodes.FirstOrDefault(n => n.ParentId == null);
+
+    /// <summary>
+    /// Gets all nodes in the tree
+    /// </summary>
+    /// <returns>List of all nodes</returns>
+    public List<FlowyNode> GetAllNodes() => _treeService.Nodes.ToList();
+
+    /// <summary>
+    /// Gets the total number of nodes in the tree
+    /// </summary>
+    /// <returns>Node count</returns>
+    public int GetNodeCount() => _treeService.Nodes.Count;
+
+    /// <summary>
+    /// Checks if the tree has any nodes
+    /// </summary>
+    /// <returns>True if tree has nodes, false if empty</returns>
+    public bool HasNodes() => _treeService.Nodes.Count > 0;
+
+    /// <summary>
+    /// Whether drag and drop is enabled
+    /// </summary>
+    [Parameter]
+    public bool EnableDragDrop { get; set; } = true;
+
+    /// <summary>
+    /// Whether to automatically zoom to fit all nodes in view
+    /// </summary>
+    [Parameter]
+    public bool AutoZoom { get; set; } = false;
+
+    /// <summary>
+    /// Event callback for when AutoZoom changes
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> AutoZoomChanged { get; set; }
+
+    /// <summary>
+    /// Manual zoom level (0.1 to 3.0). Default is 1.0 for 100% zoom.
+    /// When user manually changes zoom (keyboard/mouse/parameter), AutoZoom is automatically disabled.
+    /// </summary>
+    [Parameter]
+    public double ZoomLevel { get; set; } = 1.0;
+
+    /// <summary>
+    /// Event callback for when ZoomLevel changes
+    /// </summary>
+    [Parameter]
+    public EventCallback<double> ZoomLevelChanged { get; set; }
+
+    /// <summary>
+    /// Whether canvas panning is enabled (left-click, space+drag, middle-click)
+    /// </summary>
+    [Parameter]
+    public bool EnablePanning { get; set; } = true;
+
+    /// <summary>
+    /// Whether to automatically keep the canvas centered on the root node
+    /// </summary>
+    [Parameter]
+    public bool AutoCenter { get; set; } = false;
+
+    /// <summary>
+    /// Whether to enable smooth animations for panning, zooming, and positioning.
+    /// When enabled, provides momentum and easing for fluid camera movement.
+    /// </summary>
+    [Parameter]
+    public bool Smooth { get; set; } = true;
+
+    /// <summary>
+    /// Enable debug console logging for detailed JavaScript performance and operation tracking.
+    /// Logs all node creation, positioning, and timing information to browser console.
+    /// </summary>
+    [Parameter]
+    public bool Debug { get; set; } = false;
+
+    /// <summary>
+    /// Placeholder text for empty canvas
+    /// </summary>
+    [Parameter]
+    public string PlaceholderText { get; set; } = "✨ Drag components here to build your family tree ✨";
+
+    /// <summary>
+    /// Additional CSS class
+    /// </summary>
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Additional inline styles
+    /// </summary>
+    [Parameter]
+    public string? Style { get; set; }
+
+    /// <summary>
+    /// Event fired when a component is dropped onto the canvas or a node is moved to a new parent.
+    /// Provides information about the node, target location, and whether it's a new node.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyNodeDroppedEventArgs> OnNodeDropped { get; set; }
+    
+    /// <summary>
+    /// Event fired when a node is added programmatically via AddNodeAsync().
+    /// Contains the newly created node information.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyNodeEventArgs> OnNodeAdded { get; set; }
+    
+    /// <summary>
+    /// Event fired when a node is removed from the tree.
+    /// Contains the removed node's ID and details.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyNodeRemovedEventArgs> OnNodeRemoved { get; set; }
+    
+    /// <summary>
+    /// Event fired when a node is moved to a new parent in the tree structure.
+    /// Contains the node ID and new parent ID.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyNodeMovedEventArgs> OnNodeMoved { get; set; }
+    
+    /// <summary>
+    /// Event fired when the tree structure is restructured via promote/demote operations.
+    /// Contains the operation type and affected node ID.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyTreeRestructuredEventArgs> OnTreeRestructured { get; set; }
+    
+    /// <summary>
+    /// Event fired when a node is clicked and selected.
+    /// Contains the selected node and previously selected node.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyNodeSelectedEventArgs> OnNodeSelected { get; set; }
+    
+    /// <summary>
+    /// Event fired before a drop operation to validate if the target is allowed.
+    /// Set args.IsValid to false to reject the drop. Can provide a ValidationMessage for user feedback.
+    /// </summary>
+    [Parameter] public EventCallback<FlowyValidationEventArgs> OnValidateDropTarget { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Dynamically import the JavaScript module
+                _jsModule = await JS.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/VIOVNL.Flowy.Blazor/js/flowy-interop.js");
+                
+                _dotNetRef = DotNetObjectReference.Create(this);
+                
+                // Pre-render RenderFragments to HTML strings
+                var componentsWithHtml = new List<object>();
+                using (var htmlRenderer = new HtmlRenderer(ServiceProvider, LoggerFactory))
+                {
+                    foreach (var c in Components)
+                    {
+                        string bodyHtml = string.Empty;
+                        if (c.BodyContent != null)
+                        {
+                            var output = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+                            {
+                                var result = await htmlRenderer.RenderComponentAsync<DynamicComponent>(
+                                    ParameterView.FromDictionary(new Dictionary<string, object?>
+                                    {
+                                        { "Type", typeof(RenderFragmentWrapper) },
+                                        { "Parameters", new Dictionary<string, object?> { { "Content", c.BodyContent } } }
+                                    }));
+                                return result.ToHtmlString();
+                            });
+                            bodyHtml = output;
+                        }
+                        
+                        componentsWithHtml.Add(new
+                        {
+                            componentId = c.ComponentId,
+                            name = c.Name,
+                            bodyHtml = bodyHtml,
+                            color = c.Color,
+                            isDraggable = c.IsDraggable,
+                            canHaveChildren = c.CanHaveChildren
+                        });
+                    }
+                }
+                
+                var config = new
+                {
+                    canvasId = CanvasId,
+                    enableDragDrop = EnableDragDrop,
+                    autoZoom = AutoZoom,
+                    zoomLevel = ZoomLevel,
+                    enablePanning = EnablePanning,
+                    autoCenter = AutoCenter,
+                    smooth = Smooth,
+                    debug = Debug,
+                    components = componentsWithHtml
+                };
+
+                await _jsModule.InvokeVoidAsync("FlowyInterop.initialize", CanvasId, config, _dotNetRef);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing Flowy canvas: {ex.Message}");
+                throw;
+            }
+        }
+    }
+
+    private double _previousZoomLevel = 1.0;
+    private bool _previousAutoZoom = false;
+    private bool _previousEnablePanning = true;
+    private bool _previousAutoCenter = false;
+    private bool _previousSmooth = true;
+    private bool _previousDebug = false;
+    private bool _previousEnableDragDrop = true;
+    private bool _updatingFromJS = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        // Skip if we're updating from JavaScript to prevent infinite loop
+        if (_updatingFromJS)
+        {
+            _updatingFromJS = false;
+            return;
+        }
+
+        // Apply parameter changes to JavaScript after first render
+        if (_jsModule != null)
+        {
+            // Handle ZoomLevel parameter changes (from parent component/UI)
+            if (Math.Abs(ZoomLevel - _previousZoomLevel) > 0.0001)
+            {
+                _previousZoomLevel = ZoomLevel;
+                await SetZoomLevelAsync(ZoomLevel);
+            }
+
+            // Handle AutoZoom parameter changes (from parent component/UI)
+            if (AutoZoom != _previousAutoZoom)
+            {
+                _previousAutoZoom = AutoZoom;
+                await SetAutoZoomAsync(AutoZoom);
+            }
+
+            // Handle EnablePanning parameter changes
+            if (EnablePanning != _previousEnablePanning)
+            {
+                _previousEnablePanning = EnablePanning;
+                await SetPanningEnabledAsync(EnablePanning);
+            }
+
+            // Handle AutoCenter parameter changes
+            if (AutoCenter != _previousAutoCenter)
+            {
+                _previousAutoCenter = AutoCenter;
+                await SetAutoCenterAsync(AutoCenter);
+            }
+
+            // Handle Smooth parameter changes
+            if (Smooth != _previousSmooth)
+            {
+                _previousSmooth = Smooth;
+                await SetSmoothAsync(Smooth);
+            }
+
+            // Handle Debug parameter changes
+            if (Debug != _previousDebug)
+            {
+                _previousDebug = Debug;
+                // Debug mode requires reinitialization, just update the flag
+                // JavaScript will pick it up on next operation
+            }
+
+            // Handle EnableDragDrop parameter changes
+            if (EnableDragDrop != _previousEnableDragDrop)
+            {
+                _previousEnableDragDrop = EnableDragDrop;
+                await SetDragDropEnabledAsync(EnableDragDrop);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task NotifyNodeDropped(string nodeDataJson, string targetNodeIdStr, string position, bool isNewNode)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyNodeDropped", "Node drop event received", new { isNewNode, position });
+        
+        var nodeData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(nodeDataJson);
+        if (nodeData == null) return;
+
+        var node = new FlowyNode
+        {
+            Id = nodeData.ContainsKey("id") && Guid.TryParse(nodeData["id"].GetString(), out var id) ? id : Guid.NewGuid(),
+            Name = nodeData["name"].GetString() ?? "",
+            ComponentId = nodeData["componentId"].GetString() ?? "",
+            Color = nodeData["color"].GetString() ?? "#667eea",
+            IsDraggable = nodeData.ContainsKey("isDraggable") && nodeData["isDraggable"].GetBoolean(),
+            CanHaveChildren = !nodeData.ContainsKey("canHaveChildren") || nodeData["canHaveChildren"].GetBoolean()
+        };
+
+        FlowyNode? targetNode = null;
+        if (Guid.TryParse(targetNodeIdStr, out var targetId))
+        {
+            targetNode = _treeService.GetNodeById(targetId);
+        }
+
+        var dropPosition = Enum.Parse<DropPosition>(position, true);
+
+        // Add to tree service if it's a new node being dropped
+        if (isNewNode)
+        {
+            _treeService.AddExistingNode(node, targetNode);
+        }
+
+        var args = new FlowyNodeDroppedEventArgs
+        {
+            Node = node,
+            TargetNode = targetNode,
+            Position = dropPosition,
+            IsNewNode = isNewNode
+        };
+
+        await OnNodeDropped.InvokeAsync(args);
+    }
+
+    [JSInvokable]
+    public async Task NotifyNodeMoved(string nodeIdStr, string newParentIdStr)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyNodeMoved", "Node moved to new parent", new { nodeId = nodeIdStr, newParentId = newParentIdStr });
+        
+        if (!Guid.TryParse(nodeIdStr, out var nodeId)) return;
+        
+        Guid? newParentId = null;
+        if (!string.IsNullOrEmpty(newParentIdStr) && Guid.TryParse(newParentIdStr, out var parentId))
+        {
+            newParentId = parentId;
+        }
+
+        _treeService.MoveNode(nodeId, newParentId);
+
+        var args = new FlowyNodeMovedEventArgs
+        {
+            NodeId = nodeId,
+            NewParentId = newParentId
+        };
+
+        await OnNodeMoved.InvokeAsync(args);
+    }
+
+    [JSInvokable]
+    public async Task NotifyNodeRemoved(string nodeIdStr)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyNodeRemoved", "Node removal event", new { nodeId = nodeIdStr });
+        
+        if (!Guid.TryParse(nodeIdStr, out var nodeId)) return;
+
+        var node = _treeService.GetNodeById(nodeId);
+        if (node == null) return;
+
+        _treeService.RemoveNode(nodeId);
+
+        var args = new FlowyNodeRemovedEventArgs
+        {
+            NodeId = nodeId,
+            Node = node
+        };
+
+        await OnNodeRemoved.InvokeAsync(args);
+    }
+
+    [JSInvokable]
+    public async Task NotifyNodeSelected(string? nodeIdStr, string? previousNodeIdStr)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyNodeSelected", "Node selection changed", new { nodeId = nodeIdStr ?? "none", previousNodeId = previousNodeIdStr ?? "none" });
+        
+        FlowyNode? selectedNode = null;
+        FlowyNode? previousNode = null;
+
+        if (!string.IsNullOrEmpty(nodeIdStr) && Guid.TryParse(nodeIdStr, out var nodeId))
+        {
+            selectedNode = _treeService.GetNodeById(nodeId);
+        }
+
+        if (!string.IsNullOrEmpty(previousNodeIdStr) && Guid.TryParse(previousNodeIdStr, out var prevId))
+        {
+            previousNode = _treeService.GetNodeById(prevId);
+        }
+
+        var args = new FlowyNodeSelectedEventArgs
+        {
+            Node = selectedNode,
+            PreviousNode = previousNode
+        };
+
+        await OnNodeSelected.InvokeAsync(args);
+    }
+
+    [JSInvokable]
+    public async Task NotifyNodePromoted(string nodeIdStr)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyNodePromoted", "Node promoted in hierarchy", new { nodeId = nodeIdStr });
+        
+        if (!Guid.TryParse(nodeIdStr, out var nodeId)) return;
+
+        _treeService.PromoteNode(nodeId);
+
+        var args = new FlowyTreeRestructuredEventArgs
+        {
+            OperationType = "promote",
+            AffectedNodeId = nodeId
+        };
+
+        await OnTreeRestructured.InvokeAsync(args);
+    }
+
+    [JSInvokable]
+    public async Task NotifyNodeDemoted(string nodeIdStr)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyNodeDemoted", "Node demoted in hierarchy", new { nodeId = nodeIdStr });
+        
+        if (!Guid.TryParse(nodeIdStr, out var nodeId)) return;
+
+        _treeService.DemoteNode(nodeId);
+
+        var args = new FlowyTreeRestructuredEventArgs
+        {
+            OperationType = "demote",
+            AffectedNodeId = nodeId
+        };
+
+        await OnTreeRestructured.InvokeAsync(args);
+    }
+
+    [JSInvokable]
+    public async Task<bool> ValidateDropTarget(string nodeIdStr, string targetNodeIdStr, string position)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ValidateDropTarget", "Validating drop operation", new { node = nodeIdStr, target = targetNodeIdStr, position });
+        
+        if (!OnValidateDropTarget.HasDelegate)
+        {
+            if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ValidateDropTarget", "No validation delegate, allowing drop");
+            return true;
+        }
+
+        FlowyNode? node = null;
+        FlowyNode? targetNode = null;
+        string componentId = nodeIdStr; // For new components, this is the componentId
+
+        // Try to find existing node (for rearranging existing nodes)
+        if (Guid.TryParse(nodeIdStr, out var nodeId))
+        {
+            node = _treeService.GetNodeById(nodeId);
+        }
+        
+        // If not found as GUID, create a temporary node for validation (new component drop)
+        if (node == null)
+        {
+            var component = Components.FirstOrDefault(c => c.ComponentId == nodeIdStr);
+            if (component != null)
+            {
+                node = new FlowyNode
+                {
+                    Id = Guid.Empty, // Temporary ID
+                    Name = component.Name,
+                    ComponentId = component.ComponentId,
+                    Color = component.Color,
+                    IsDraggable = component.IsDraggable,
+                    CanHaveChildren = component.CanHaveChildren
+                };
+            }
+        }
+        
+        if (Guid.TryParse(targetNodeIdStr, out var targetId))
+            targetNode = _treeService.GetNodeById(targetId);
+
+        if (node == null)
+        {
+            if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ValidateDropTarget", "Node/Component not found, allowing drop");
+            return true;
+        }
+
+        var dropPosition = Enum.Parse<DropPosition>(position, true);
+        var args = new FlowyValidationEventArgs
+        {
+            Node = node,
+            TargetNode = targetNode,
+            Position = dropPosition,
+            IsValid = true
+        };
+
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ValidateDropTarget", "Invoking validation callback");
+        await OnValidateDropTarget.InvokeAsync(args);
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ValidateDropTarget", $"Validation result: {(args.IsValid ? "ALLOWED" : "REJECTED")}", new { isValid = args.IsValid, message = args.ValidationMessage ?? "none" });
+        return args.IsValid;
+    }
+
+    [JSInvokable]
+    public async Task NotifyZoomChanged(double newZoomLevel)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyZoomChanged", "Zoom level changed", new { oldZoomLevel = ZoomLevel, newZoomLevel });
+        
+        _updatingFromJS = true;
+        _previousZoomLevel = newZoomLevel;
+        ZoomLevel = newZoomLevel;
+        await ZoomLevelChanged.InvokeAsync(newZoomLevel);
+    }
+    
+    [JSInvokable]
+    public async Task NotifyAutoZoomChanged(bool enabled)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "NotifyAutoZoomChanged", "AutoZoom state changed", new { enabled });
+        
+        _updatingFromJS = true;
+        _previousAutoZoom = enabled;
+        AutoZoom = enabled;
+        await AutoZoomChanged.InvokeAsync(enabled);
+    }
+
+    /// <summary>
+    /// Programmatically adds a new node to the tree.
+    /// </summary>
+    /// <param name="name">Display name for the node</param>
+    /// <param name="componentId">Component type identifier</param>
+    /// <param name="color">Background color in hex format (e.g., "#667eea")</param>
+    /// <param name="parentId">Parent node GUID, or null to create as root</param>
+    /// <param name="isDraggable">Whether the node can be dragged (default: true)</param>
+    /// <param name="canHaveChildren">Whether the node can accept children (default: true)</param>
+    /// <returns>The created FlowyNode, or null if TreeService is not available</returns>
+    public async Task<FlowyNode?> AddNodeAsync(string name, string componentId, string color, Guid? parentId = null, bool isDraggable = true, bool canHaveChildren = true)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "AddNodeAsync", "Adding node programmatically", new { name, componentId, parentId = parentId?.ToString() ?? "root" });
+        
+        var parent = parentId.HasValue ? _treeService.GetNodeById(parentId.Value) : null;
+        var node = _treeService.AddNode(name, componentId, color, parent, isDraggable, canHaveChildren);
+
+        if (_jsModule != null)
+        {
+            // Find the matching component to get the HTML content
+            var component = Components.FirstOrDefault(c => c.ComponentId == componentId);
+            
+            // Render the component's HTML content if found
+            string bodyHtml = string.Empty;
+            if (component?.BodyContent != null)
+            {
+                using (var htmlRenderer = new HtmlRenderer(ServiceProvider, LoggerFactory))
+                {
+                    bodyHtml = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+                    {
+                        var result = await htmlRenderer.RenderComponentAsync<DynamicComponent>(
+                            ParameterView.FromDictionary(new Dictionary<string, object?>
+                            {
+                                { "Type", typeof(RenderFragmentWrapper) },
+                                { "Parameters", new Dictionary<string, object?> { { "Content", component.BodyContent } } }
+                            }));
+                        return result.ToHtmlString();
+                    });
+                }
+            }
+            
+            await _jsModule.InvokeVoidAsync("FlowyInterop.addNode", CanvasId, new
+            {
+                id = node.Id.ToString(),
+                name = node.Name,
+                componentId = node.ComponentId,
+                bodyHtml = bodyHtml,
+                color = node.Color,
+                isDraggable = isDraggable,
+                canHaveChildren = canHaveChildren,
+                parentId = parentId?.ToString()
+            }, true); // skipNotification = true to avoid duplicate in TreeService
+        }
+
+        await OnNodeAdded.InvokeAsync(new FlowyNodeEventArgs { Node = node });
+        return node;
+    }
+
+    /// <summary>
+    /// Clears all nodes from the canvas and resets the tree to empty state.
+    /// </summary>
+    public async Task ResetAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ResetAsync", "Resetting canvas to empty state", null);
+        
+        _treeService.Clear();
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.reset", CanvasId);
+    }
+
+    /// <summary>
+    /// Exports the current tree structure as a formatted JSON string.
+    /// Can be used with ImportJson() to save/restore tree state.
+    /// </summary>
+    /// <returns>JSON string representation of the tree, or null if TreeService is not available</returns>
+    public string? ExportJson()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ExportJson", "Exporting tree structure to JSON", null);
+        
+        var data = _treeService.ExportToData();
+        return JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    /// <summary>
+    /// Programmatically removes a node and all its descendants from the tree.
+    /// </summary>
+    /// <param name="nodeId">GUID of the node to remove</param>
+    /// <returns>True if the node was found and removed, false otherwise</returns>
+    public async Task<bool> RemoveNodeAsync(Guid nodeId)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "RemoveNodeAsync", "Removing node programmatically", new { nodeId });
+        
+        var node = _treeService.GetNodeById(nodeId);
+        if (node == null) return false;
+
+        var removed = _treeService.RemoveNode(nodeId);
+        if (removed && _jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("FlowyInterop.removeNode", CanvasId, nodeId.ToString());
+            await OnNodeRemoved.InvokeAsync(new FlowyNodeRemovedEventArgs { NodeId = nodeId, Node = node });
+        }
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Programmatically moves a node to a new parent in the tree structure.
+    /// </summary>
+    /// <param name="nodeId">GUID of the node to move</param>
+    /// <param name="newParentId">GUID of the new parent, or null to make it a root node</param>
+    /// <param name="position">Position index in the parent's children list (-1 for end)</param>
+    /// <returns>True if the move was successful, false otherwise</returns>
+    public async Task<bool> MoveNodeAsync(Guid nodeId, Guid? newParentId, int position = -1)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "MoveNodeAsync", "Moving node programmatically", new { nodeId, newParentId, position });
+        
+        var moved = _treeService.MoveNode(nodeId, newParentId, position);
+        if (moved && _jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("FlowyInterop.refresh", CanvasId);
+            
+            var node = _treeService.GetNodeById(nodeId);
+            if (node != null)
+            {
+                await OnNodeMoved.InvokeAsync(new FlowyNodeMovedEventArgs { NodeId = nodeId, NewParentId = newParentId });
+            }
+        }
+
+        return moved;
+    }
+
+    /// <summary>
+    /// Imports tree structure from a JSON string (previously exported via ExportJson).
+    /// Clears the current tree and rebuilds from the imported data.
+    /// </summary>
+    /// <param name="json">JSON string containing the tree structure</param>
+    public async Task ImportJson(string json)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ImportJson", "Importing tree structure from JSON", new { jsonLength = json?.Length ?? 0 });
+        
+        if (_jsModule == null) return;
+
+        var data = JsonSerializer.Deserialize<FlowyTreeData>(json);
+        if (data != null && data.Nodes.Count > 0)
+        {
+            // Load data into tree service
+            _treeService.LoadFromData(data);
+            
+            // Debug: Log what we loaded
+            if (Debug)
+            {
+                ConsoleExtensions.WriteLinePretty("CanvasEditor", "ImportJson", $"Loaded {data.Nodes.Count} nodes from JSON", null);
+                foreach (var n in data.Nodes)
+                {
+                    ConsoleExtensions.WriteLinePretty("CanvasEditor", "ImportJson", $"Node loaded: {n.Name}", new { id = n.Id, parentId = n.ParentId?.ToString() ?? "null", childrenCount = n.ChildrenIds.Count });
+                }
+            }
+            
+            // Reset canvas to clear existing nodes
+            await _jsModule.InvokeVoidAsync("FlowyInterop.reset", CanvasId);
+            
+            // Find all root nodes (nodes without a parent)
+            var rootNodes = data.Nodes.Where(n => !n.ParentId.HasValue).ToList();
+            
+            if (rootNodes.Count > 0)
+            {
+                // Rebuild each root node and its hierarchy
+                foreach (var rootNode in rootNodes)
+                {
+                    await RebuildNodeHierarchy(rootNode, null);
+                }
+            }
+            else if (data.RootNodeId.HasValue)
+            {
+                // Fallback: if RootNodeId is specified but no nodes have null ParentId
+                var rootNode = _treeService.GetNodeById(data.RootNodeId.Value);
+                if (rootNode != null)
+                {
+                    await RebuildNodeHierarchy(rootNode, null);
+                }
+            }
+            
+            // Fit imported tree to screen
+            await FitAllNodesInViewportAsync();
+        }
+    }
+    
+    /// <summary>
+    /// Recursively rebuilds a node and its children in the JavaScript canvas from the TreeService.
+    /// Used internally during ImportJson operations.
+    /// </summary>
+    /// <param name="node">The node to rebuild</param>
+    /// <param name="parentId">The parent node's GUID, or null for root nodes</param>
+    private async Task RebuildNodeHierarchy(FlowyNode node, Guid? parentId)
+    {
+        if (_jsModule == null) return;
+        
+        var parentIdString = parentId?.ToString();
+        
+        // Find the matching component to get the HTML content
+        var component = Components.FirstOrDefault(c => c.ComponentId == node.ComponentId);
+        
+        // Render the component's HTML content if found
+        string bodyHtml = string.Empty;
+        if (component?.BodyContent != null)
+        {
+            using (var htmlRenderer = new HtmlRenderer(ServiceProvider, LoggerFactory))
+            {
+                bodyHtml = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+                {
+                    var result = await htmlRenderer.RenderComponentAsync<DynamicComponent>(
+                        ParameterView.FromDictionary(new Dictionary<string, object?>
+                        {
+                            { "Type", typeof(RenderFragmentWrapper) },
+                            { "Parameters", new Dictionary<string, object?> { { "Content", component.BodyContent } } }
+                        }));
+                    return result.ToHtmlString();
+                });
+            }
+        }
+        
+        // Add this node to JavaScript canvas (skipNotification=true to avoid duplicate TreeService updates)
+        await _jsModule.InvokeVoidAsync("FlowyInterop.addNode", CanvasId, new
+        {
+            id = node.Id.ToString(),
+            name = node.Name,
+            componentId = node.ComponentId,
+            bodyHtml = bodyHtml,
+            color = node.Color,
+            isDraggable = node.IsDraggable,
+            canHaveChildren = node.CanHaveChildren,
+            parentId = parentIdString
+        }, true); // skipNotification = true
+        
+        // Recursively add children
+        var children = _treeService.GetChildren(node);
+        foreach (var child in children)
+        {
+            await RebuildNodeHierarchy(child, node.Id);
+        }
+    }
+
+    /// <summary>
+    /// Enables or disables drag and drop functionality for the entire canvas.
+    /// </summary>
+    /// <param name="enabled">True to enable drag and drop, false to disable</param>
+    public async Task SetDragDropEnabledAsync(bool enabled)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetDragDropEnabledAsync", "Setting drag-drop state", new { enabled });
+        
+        EnableDragDrop = enabled;
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setDragDropEnabled", CanvasId, enabled);
+    }
+
+    /// <summary>
+    /// Sets whether a specific node can be dragged by the user.
+    /// </summary>
+    /// <param name="nodeId">GUID of the node to modify</param>
+    /// <param name="draggable">True to allow dragging, false to lock the node</param>
+    public async Task SetNodeDraggableAsync(Guid nodeId, bool draggable)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetNodeDraggableAsync", "Setting node draggable state", new { nodeId, draggable });
+        
+        var node = _treeService.GetNodeById(nodeId);
+        if (node != null && _jsModule != null)
+        {
+            node.IsDraggable = draggable;
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setNodeDraggable", CanvasId, nodeId.ToString(), draggable);
+        }
+    }
+
+    /// <summary>
+    /// Sets whether a specific node can accept child nodes.
+    /// When false, prevents any nodes from being dropped onto this node.
+    /// </summary>
+    /// <param name="nodeId">GUID of the node to modify</param>
+    /// <param name="canHaveChildren">True to allow children, false to prevent them</param>
+    public async Task SetNodeCanHaveChildrenAsync(Guid nodeId, bool canHaveChildren)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetNodeCanHaveChildrenAsync", "Setting node children capability", new { nodeId, canHaveChildren });
+        
+        var node = _treeService.GetNodeById(nodeId);
+        if (node != null && _jsModule != null)
+        {
+            node.CanHaveChildren = canHaveChildren;
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setNodeCanHaveChildren", CanvasId, nodeId.ToString(), canHaveChildren);
+        }
+    }
+
+    /// <summary>
+    /// Increases the canvas zoom level by a predefined increment.
+    /// </summary>
+    public async Task ZoomInAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ZoomInAsync", "Zooming in", null);
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.zoomIn", CanvasId);
+    }
+
+    /// <summary>
+    /// Decreases the canvas zoom level by a predefined increment.
+    /// </summary>
+    public async Task ZoomOutAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ZoomOutAsync", "Zooming out", null);
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.zoomOut", CanvasId);
+    }
+
+    /// <summary>
+    /// Resets the canvas zoom level to 100% (1.0x).
+    /// </summary>
+    public async Task ZoomResetAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ZoomResetAsync", "Resetting zoom to 100%", null);
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.zoomReset", CanvasId);
+    }
+
+    /// <summary>
+    /// Automatically adjusts zoom to fit all nodes within the viewport with padding.
+    /// </summary>
+    public async Task ZoomToFitAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "ZoomToFitAsync", "Zooming to fit all nodes", null);
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.zoomToFit", CanvasId);
+    }
+
+    /// <summary>
+    /// Enables or disables automatic zoom-to-fit behavior.
+    /// When enabled, the canvas automatically zooms to show all nodes whenever the tree structure changes.
+    /// </summary>
+    /// <param name="enabled">True to enable AutoZoom, false to disable</param>
+    public async Task SetAutoZoomAsync(bool enabled)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetAutoZoomAsync", "Setting auto-zoom state", new { enabled });
+        
+        AutoZoom = enabled;
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setAutoZoom", CanvasId, enabled);
+    }
+
+    /// <summary>
+    /// Fit all nodes in viewport once without enabling continuous AutoZoom.
+    /// Calculates optimal zoom and pan to show all nodes with padding.
+    /// </summary>
+    public async Task FitAllNodesInViewportAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "FitAllNodesInViewportAsync", "Fitting all nodes in viewport", null);
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.fitAllNodesInViewport", CanvasId);
+    }
+
+    /// <summary>
+    /// Enables or disables canvas panning (left-click drag, space+drag, middle-click drag).
+    /// </summary>
+    /// <param name="enabled">True to enable panning, false to disable</param>
+    public async Task SetPanningEnabledAsync(bool enabled)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetPanningEnabledAsync", "Setting panning state", new { enabled });
+        
+        EnablePanning = enabled;
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setPanningEnabled", CanvasId, enabled);
+    }
+
+    /// <summary>
+    /// Sets the canvas zoom level to a specific value.
+    /// Automatically disables AutoZoom when called.
+    /// </summary>
+    /// <param name="level">Zoom level between 0.1 (10%) and 3.0 (300%)</param>
+    public async Task SetZoomLevelAsync(double level)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetZoomLevelAsync", "Setting zoom level", new { level });
+        
+        ZoomLevel = Math.Max(0.1, Math.Min(3.0, level));
+        
+        // Disable AutoZoom when manually setting zoom
+        if (AutoZoom)
+        {
+            AutoZoom = false;
+        }
+        
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setZoomLevel", CanvasId, ZoomLevel, true);
+            if (AutoZoom)
+                await _jsModule.InvokeVoidAsync("FlowyInterop.setAutoZoom", CanvasId, false);
+        }
+    }
+
+    /// <summary>
+    /// Enables or disables automatic centering on the root node.
+    /// When enabled, the canvas automatically centers on the root after layout changes.
+    /// </summary>
+    /// <param name="enabled">True to enable AutoCenter, false to disable</param>
+    public async Task SetAutoCenterAsync(bool enabled)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetAutoCenterAsync", "Setting auto-center state", new { enabled });
+        
+        AutoCenter = enabled;
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setAutoCenter", CanvasId, enabled);
+    }
+
+    /// <summary>
+    /// Centers the canvas viewport on the root node.
+    /// </summary>
+    public async Task CenterAsync()
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "CenterAsync", "Centering view on root node", null);
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.center", CanvasId);
+    }
+
+    /// <summary>
+    /// Moves the canvas viewport to specific pixel coordinates.
+    /// </summary>
+    /// <param name="x">Horizontal position in pixels</param>
+    /// <param name="y">Vertical position in pixels</param>
+    public async Task PositionAsync(int x, int y)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "PositionAsync", "Setting viewport position", new { x, y });
+        
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.position", CanvasId, x, y);
+    }
+
+    /// <summary>
+    /// Focus on a specific node by centering it in the viewport
+    /// </summary>
+    /// <param name="nodeId">The GUID of the node to focus on</param>
+    /// <returns>True if the node was found and focused, false otherwise</returns>
+    public async Task<bool> FocusItemAsync(Guid nodeId)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "FocusItemAsync", "Focusing on node", new { nodeId });
+        
+        if (_jsModule != null)
+            return await _jsModule.InvokeAsync<bool>("FlowyInterop.focusItem", CanvasId, nodeId.ToString());
+        return false;
+    }
+
+    /// <summary>
+    /// Enables or disables smooth animations for panning, zooming, and positioning.
+    /// When enabled, provides momentum physics and easing for fluid camera movement.
+    /// </summary>
+    /// <param name="enabled">True to enable smooth animations, false for instant movement</param>
+    public async Task SetSmoothAsync(bool enabled)
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "SetSmoothAsync", "Setting smooth animations state", new { enabled });
+        
+        Smooth = enabled;
+        if (_jsModule != null)
+            await _jsModule.InvokeVoidAsync("FlowyInterop.setSmooth", CanvasId, enabled);
+    }
+
+    /// <summary>
+    /// Animates droplets flowing from one node to another through the tree structure.
+    /// Droplets follow the connection lines, taking the shortest path through the tree.
+    /// </summary>
+    /// <param name="startNodeId">GUID of the starting node</param>
+    /// <param name="endNodeId">GUID of the destination node</param>
+    /// <param name="duration">Duration in milliseconds for each segment animation (default: 800)</param>
+    /// <param name="dropletCount">Number of droplets to animate (default: 5)</param>
+    /// <param name="dropletDelay">Delay in milliseconds between each droplet start (default: 150)</param>
+    /// <param name="dropletDistance">Distance spacing (0.0-1.0) between droplets along the path (default: 0, spawns together)</param>
+    /// <param name="easing">Easing function: Linear, EaseIn, EaseOut, EaseInOut, EaseInQuad, EaseOutQuad, EaseInOutQuad, EaseInCubic (default: EaseInOut)</param>
+    /// <returns>True if the animation completed successfully, false if no path was found between the nodes</returns>
+    public async Task<bool> FlowDropletsAsync(Guid startNodeId, Guid endNodeId, int duration = 800, int dropletCount = 5, int dropletDelay = 150, double dropletDistance = 0, string easing = "easeInOut")
+    {
+        if (Debug) ConsoleExtensions.WriteLinePretty("CanvasEditor", "FlowDropletsAsync", "Starting droplet animation", new { startNodeId, endNodeId, duration, dropletCount, dropletDelay, dropletDistance, easing });
+        
+        if (_jsModule != null)
+            return await _jsModule.InvokeAsync<bool>("FlowyInterop.flowDroplets", CanvasId, startNodeId.ToString(), endNodeId.ToString(), duration, dropletCount, dropletDelay, dropletDistance, easing);
+        return false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("FlowyInterop.dispose", CanvasId);
+                await _jsModule.DisposeAsync();
+            }
+            catch { /* Ignore disposal errors */ }
+        }
+        _dotNetRef?.Dispose();
+    }
+}

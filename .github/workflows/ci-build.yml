@@ -1,0 +1,55 @@
+name: CI Build and Test
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  push:
+    branches:
+      - develop
+      - feature/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Check package can be created
+        run: dotnet pack VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj --configuration Release --no-build --output ./test-nupkg
+
+      - name: List package contents
+        run: |
+          echo "Generated test packages:"
+          ls -la ./test-nupkg/
+
+      - name: Build demo app
+        run: dotnet build VIOVNL.Flowy.Demo/VIOVNL.Flowy.Demo.csproj --configuration Release --no-restore
+
+      - name: Verify static assets
+        run: |
+          echo "Checking for required JavaScript files..."
+          test -f VIOVNL.Flowy.Blazor/wwwroot/js/flowy-interop.js || { echo "Missing flowy-interop.js"; exit 1; }
+          test -f VIOVNL.Flowy.Blazor/wwwroot/js/flowy-core.js || { echo "Missing flowy-core.js"; exit 1; }
+          echo "All required files present"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./test-nupkg/*.nupkg
+          retention-days: 7

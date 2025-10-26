@@ -1,0 +1,155 @@
+/**
+ * VIOVNL.Flowy.Blazor - Drag and Drop System
+ * 
+ * Provides visual feedback during drag operations:
+ * - Ghost elements that follow the cursor
+ * - Drop zone highlighting
+ * - State indicators during drag
+ * 
+ * Drag Flow:
+ * 1. User mousedown on component item or node
+ * 2. Ghost element created and positioned at cursor
+ * 3. Drop targets highlight when cursor approaches
+ * 4. Ghost element removed on mouseup
+ * 
+ * Ghost Types:
+ * - Component ghost: Cloned component item from sidebar
+ * - Node ghost: Miniature preview of dragged node
+ */
+
+/* ========================================
+   DRAG GHOST - Base Styling
+   Element that follows cursor during drag operation
+   ======================================== */
+
+.drag-ghost {
+    /* Positioning - fixed to viewport, follows cursor */
+    position: fixed;
+    top: 0;
+    left: 0;
+    
+    /* Non-interactive (clicks pass through) */
+    pointer-events: none;
+    
+    /* Layering - above everything else */
+    z-index: 10000;
+    
+    /* Entry animation (can be disabled via JS for immediate positioning) */
+    animation: ghostAppear var(--durationNormal) var(--curveDecelerateMin);
+    
+    /* Performance optimization - prepare for transform updates */
+    will-change: transform;
+    transform-origin: 0 0;
+}
+
+/* Ghost containing cloned component-item - remove redundant styling */
+.drag-ghost > .component-item {
+    margin-bottom: 0;                 /* Remove margin from cloned item */
+    box-shadow: var(--shadow16);      /* Stronger shadow for dragging state */
+    opacity: 0.8 !important;          /* Semi-transparent for drag feedback */
+}
+
+/* Fallback styling when ghost contains simple text (no cloned component) */
+.drag-ghost:not(:has(.component-item)) {
+    /* Card-like appearance */
+    background: var(--colorNeutralBackground1);
+    border-radius: var(--borderRadiusMedium);
+    padding: 0px;
+    box-shadow: var(--shadow16);
+    border: 1px solid var(--colorNeutralStroke2);
+    
+    /* Layout */
+    display: flex;
+    align-items: flex-start;
+    gap: 0px;
+    
+    /* Semi-transparent for "lifting" effect */
+    opacity: 0.8;
+}
+
+/* Ghost name text (fallback when no component clone) */
+.ghost-name {
+    font-weight: var(--fontWeightSemibold);
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground1);
+    white-space: nowrap;
+}
+
+/* ========================================
+   DRAG GHOST NODE - Node-specific Ghost
+   Miniature preview of node being dragged within canvas
+   ======================================== */
+
+.drag-ghost-node {
+    /* Fixed width matching actual nodes */
+    width: 200px;
+    
+    /* Visual styling - elevated card */
+    background: var(--colorNeutralBackground1);
+    border-radius: var(--borderRadiusMedium);
+    box-shadow: var(--shadow28); /* Maximum elevation */
+    border: 1px solid var(--colorNeutralStroke2);
+    overflow: hidden;
+    
+    /* Near-opaque for clear preview */
+    opacity: 0.98;
+    
+    /* Layout */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Node ghost header (colored title bar) */
+.ghost-node-header {
+    /* Layout */
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    
+    /* Visual styling - matches actual node header */
+    background: var(--ghost-node-color, var(--colorBrandBackground));
+    color: white;
+    font-weight: var(--fontWeightSemibold);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Node ghost title text */
+.ghost-node-title {
+    /* Layout */
+    flex: 1;
+    padding: var(--spacingHorizontalS) var(--spacingHorizontalM);
+    
+    /* Typography */
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
+    line-height: 20px;
+    
+    /* Text overflow handling */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Node ghost body (content preview) */
+.ghost-node-body {
+    /* Layout and spacing */
+    padding: var(--spacingHorizontalS) var(--spacingHorizontalM);
+    background: var(--colorNeutralBackground1);
+    min-height: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacingHorizontalXXS);
+}
+
+/* Node ghost body content */
+.ghost-node-body .node-body-html,
+.ghost-node-body > * {
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground2);
+    font-weight: var(--fontWeightRegular);
+    line-height: 16px;
+    margin: 0;
+}

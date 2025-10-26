@@ -1,0 +1,70 @@
+/**
+ * VIOVNL.Flowy.Blazor Component Library - Main Stylesheet
+ * Version: 1.0.0
+ * 
+ * A comprehensive Blazor component library for building interactive hierarchical
+ * tree visualizations with drag-and-drop, automatic layout, and zoom/pan controls.
+ * 
+ * Design System: Microsoft Fluent UI 2
+ * Browser Support: Modern browsers (Chrome, Firefox, Safari, Edge)
+ * 
+ * Architecture:
+ * This file imports modular CSS files organized by functionality:
+ * 
+ * 1. flowy-variables.css - Design tokens (colors, spacing, typography)
+ * 2. flowy-themes.css - Dark theme and system preference support
+ * 3. flowy-layout.css - Layout components (panels, canvas, viewport)
+ * 4. flowy-nodes.css - Flow node styling and interactions
+ * 5. flowy-connections.css - SVG connection lines between nodes
+ * 6. flowy-drag-drop.css - Drag ghost elements and drop zones
+ * 7. flowy-animations.css - Keyframe animations and transitions
+ * 
+ * Usage in Blazor:
+ * <link href="_content/Flowy.Blazor/css/flowy.css" rel="stylesheet" />
+ * 
+ * Copyright (C) 2025 VIOVNL
+ * Licensed under GNU General Public License v3.0
+ * For commercial licensing: https://www.viov.nl/flowyblazor/license/
+ */
+
+/* ========================================
+   DESIGN TOKENS AND VARIABLES
+   Core design system definitions
+   ======================================== */
+@import url('flowy-variables.css');
+
+/* ========================================
+   THEME SYSTEM
+   Dark theme and system preference support
+   ======================================== */
+@import url('flowy-themes.css');
+
+/* ========================================
+   LAYOUT COMPONENTS
+   Structural elements (panels, canvas, viewport)
+   ======================================== */
+@import url('flowy-layout.css');
+
+/* ========================================
+   FLOW NODES
+   Tree node styling and interactions
+   ======================================== */
+@import url('flowy-nodes.css');
+
+/* ========================================
+   CONNECTIONS
+   SVG lines between parent and child nodes
+   ======================================== */
+@import url('flowy-connections.css');
+
+/* ========================================
+   DRAG AND DROP SYSTEM
+   Ghost elements and drop zone feedback
+   ======================================== */
+@import url('flowy-drag-drop.css');
+
+/* ========================================
+   ANIMATIONS
+   Keyframe animations and transitions
+   ======================================== */
+@import url('flowy-animations.css');
