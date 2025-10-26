@@ -11,7 +11,7 @@
 
 <div class="demo-page">
     <div class="page-header">
-        <h1>🌊 VIOVNL.Flowy.Blazor Diagram Component</h1>
+        <h1><img src="Flowy.png" alt="Flowy Logo" />VIOVNL.Flowy.Blazor Diagram Component</h1>
         <p class="subtitle">Build beautiful, interactive hierarchical tree visualizations with drag-and-drop functionality. Perfect for family trees, org charts, decision trees, and any hierarchical data structure.</p>
     </div>
 
@@ -32,9 +32,6 @@
                 </button>
                 <button class="tab-btn @(activeTab == "functions" ? "active" : "")" @onclick='() => activeTab = "functions"'>
                     🔧 Functions Reference
-                </button>
-                <button class="tab-btn @(activeTab == "code" ? "active" : "")" @onclick='() => activeTab = "code"'>
-                    💻 Complete Code
                 </button>
             </div>
 
@@ -1124,156 +1121,6 @@ await canvasEditor.FlowDropletsAsync(
                             </ul>
                         </div>
                     </div>
-                }
-                else if (activeTab == "code")
-                {
-                    <pre><code class="language-csharp">@("@")page "/examples/features"
-@("@")rendermode InteractiveServer
-@("@")using VIOVNL.Flowy.Blazor.Components
-@("@")using VIOVNL.Flowy.Blazor.Models
-@("@")using VIOVNL.Flowy.Blazor.Services
-@("@")using System.Text.Json
-@("@")inject FlowyTreeService TreeService
-
-&lt;!-- Interactive Controls --&gt;
-&lt;div class="controls-grid"&gt;
-    &lt;div class="control-group"&gt;
-        &lt;label&gt;
-            &lt;input type="checkbox" @("@")bind="enablePanning" /&gt;
-            Enable Panning
-        &lt;/label&gt;
-        &lt;label&gt;
-            &lt;input type="checkbox" @("@")bind="autoZoom" /&gt;
-            Auto Zoom
-        &lt;/label&gt;
-        &lt;input type="range" min="0.5" max="2.0" step="0.05" @("@")bind="zoomLevel" /&gt;
-    &lt;/div&gt;
-    &lt;button @("@")onclick="ExportJson"&gt;💾 Export JSON&lt;/button&gt;
-&lt;/div&gt;
-
-&lt;!-- Canvas with All Features --&gt;
-&lt;div style="display: flex; height: 600px;"&gt;
-    &lt;FlowyComponentsPanel Components="@("@")components" 
-                        Title="Components"
-                        Style="width: 220px;" /&gt;
-    
-    &lt;FlowyCanvasEditor @("@")ref="canvasEditor"
-                     Components="@("@")components"
-                     TreeService="@("@")TreeService"
-                     EnablePanning="@("@")enablePanning"
-                     @("@")bind-AutoZoom="autoZoom"
-                     AutoCenter="@("@")autoCenter"
-                     @("@")bind-ZoomLevel="zoomLevel"
-                     Smooth="@("@")smooth"
-                     Debug="@("@")debug"
-                     EnableDragDrop="@("@")enableDragDrop"
-                     OnNodeDropped="HandleNodeDropped"
-                     OnNodeMoved="HandleNodeMoved"
-                     OnNodeRemoved="HandleNodeRemoved"
-                     Style="flex: 1;" /&gt;
-&lt;/div&gt;
-
-&lt;!-- Event Log --&gt;
-&lt;div class="event-log-panel"&gt;
-    &lt;h4&gt;📊 Event Log&lt;/h4&gt;
-    &lt;div class="event-list"&gt;
-        @("@")foreach (var evt in eventLog.Take(10))
-        {
-            &lt;div class="event-entry"&gt;
-                &lt;span&gt;@("@")evt.Icon&lt;/span&gt;
-                &lt;span&gt;@("@")evt.Time&lt;/span&gt;
-                &lt;span&gt;@("@")evt.Message&lt;/span&gt;
-            &lt;/div&gt;
-        }
-    &lt;/div&gt;
-&lt;/div&gt;
-
-@("@")code {
-    private FlowyCanvasEditor? canvasEditor;
-    private List&lt;FlowyComponentItem&gt; components = new();
-    private List&lt;EventLogEntry&gt; eventLog = new();
-    
-    private bool enablePanning = true;
-    private bool autoZoom = true;
-    private bool autoCenter = true;
-    private double zoomLevel = 1.0;
-    private bool smooth = true;
-    private bool debug = false;
-    private bool enableDragDrop = true;
-    private string? statusMessage;
-    private string? exportedJson;
-
-    protected override void OnInitialized()
-    {
-        // Custom styled components with rich content
-        components = new List&lt;FlowyComponentItem&gt;
-        {
-            new FlowyComponentItem 
-            { 
-                ComponentId = "primary",
-                Name = "Primary",
-                Color = "#667eea",
-                BodyContent = @("@")&lt;div style="display: flex; align-items: center; gap: 8px;"&gt;
-                    &lt;span style="font-size: 20px;"&gt;🔵&lt;/span&gt;
-                    &lt;div&gt;
-                        &lt;div style="font-weight: 700;"&gt;Primary Node&lt;/div&gt;
-                        &lt;div style="font-size: 11px;"&gt;Main category&lt;/div&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            },
-            // ... more styled components
-        };
-    }
-
-    // Event handlers with logging
-    private Task HandleNodeDropped(FlowyNodeDroppedEventArgs args)
-    {
-        AddLog("dropped", "✅", $"Node '{args.Node.Name}' dropped");
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    private Task HandleNodeMoved(FlowyNodeMovedEventArgs args)
-    {
-        AddLog("moved", "🔄", $"Node moved");
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    private Task HandleNodeRemoved(FlowyNodeRemovedEventArgs args)
-    {
-        AddLog("removed", "❌", $"Node removed");
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    // JSON serialization
-    private void ExportJson()
-    {
-        var treeData = new FlowyTreeData { Nodes = TreeService.Nodes.ToList() };
-        exportedJson = JsonSerializer.Serialize(treeData, 
-            new JsonSerializerOptions { WriteIndented = true });
-    }
-
-    private void AddLog(string type, string icon, string message)
-    {
-        eventLog.Insert(0, new EventLogEntry 
-        { 
-            Type = type, 
-            Icon = icon, 
-            Message = message, 
-            Time = DateTime.Now.ToString("HH:mm:ss") 
-        });
-    }
-
-    private class EventLogEntry
-    {
-        public string Type { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string Message { get; set; } = "";
-        public string Time { get; set; } = "";
-    }
-}</code></pre>
                 }
             </div>
         </div>

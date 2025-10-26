@@ -1,6 +1,22 @@
-# VIOVNL.Flowy.Blazor
+<p align="center">
+  <img src="Flowy.png" alt="Flowy Logo" width="128" height="128">
+</p>
 
+<h1 align="center">VIOVNL.Flowy.Blazor</h1>
+
+<p align="center">
+  <a href="https://github.com/VIOVNL/Flowy.Blazor/actions/workflows/ci-build.yml"><img src="https://github.com/VIOVNL/Flowy.Blazor/actions/workflows/ci-build.yml/badge.svg" alt="Build Status"></a>
+  <a href="https://www.nuget.org/packages/VIOVNL.Flowy.Blazor"><img src="https://img.shields.io/nuget/v/VIOVNL.Flowy.Blazor.svg?style=flat&logo=nuget" alt="NuGet Version"></a>
+  <a href="https://www.nuget.org/packages/VIOVNL.Flowy.Blazor"><img src="https://img.shields.io/nuget/dt/VIOVNL.Flowy.Blazor.svg?style=flat&logo=nuget" alt="NuGet Downloads"></a>
+  <a href="https://github.com/VIOVNL/Flowy.Blazor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-GPL%20v3%20%2F%20Commercial-blue.svg" alt="License"></a>
+  <a href="https://dotnet.microsoft.com/download"><img src="https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet" alt=".NET 9.0"></a>
+</p>
+
+<p align="center">
 A beautiful and interactive hierarchical tree visualization component for Blazor applications. Perfect for building family trees, organization charts, decision trees, and any hierarchical data structure with an intuitive drag-and-drop interface.
+</p>
+
+---
 
 ## ✨ Features
 

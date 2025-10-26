@@ -4,7 +4,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     
     <!-- NuGet Package Properties -->
     <PackageId>VIOVNL.Flowy.Blazor</PackageId>
@@ -18,7 +17,7 @@
     <RepositoryUrl>https://github.com/VIOVNL/Flowy.Blazor</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageIcon>icon.png</PackageIcon>
+    <PackageIcon>Flowy.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
@@ -43,7 +42,7 @@
     <!-- Package readme, license and icon -->
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="..\LICENSE" Pack="true" PackagePath="\" />
-    <!--<None Include="icon.png" Pack="true" PackagePath="\" />-->
+    <None Include="Flowy.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

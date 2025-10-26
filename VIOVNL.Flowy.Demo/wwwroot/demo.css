@@ -97,13 +97,21 @@ body {
 .logo {
     padding: 24px 20px;
     border-bottom: 1px solid var(--divider-stroke);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .logo h2 {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 4px;
-    color: var(--accent-default);
+    background: linear-gradient(135deg, #d9e3ff 0%, #b3c7ff 50%, #a973ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .logo .version {
@@ -521,7 +529,18 @@ body {
     font-size: 42px;
     font-weight: 800;
     margin-bottom: 12px;
-    color: var(--accent-default);
+    background: linear-gradient(135deg, #d9e3ff 0%, #b3c7ff 50%, #a973ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex;
+    align-items: center;
+}
+
+.page-header h1 img {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
 }
 
 .subtitle {

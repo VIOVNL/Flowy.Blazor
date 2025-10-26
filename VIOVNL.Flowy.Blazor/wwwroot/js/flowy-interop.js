@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  * 
- * For commercial licensing, visit: https://www.viov.nl/flowyblazor/license/
+ * For commercial licensing, visit: https://viov.nl
  */
 
 // Flowy Blazor Component - JavaScript Interop Entry Point
