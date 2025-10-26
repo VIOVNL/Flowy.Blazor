@@ -23,11 +23,14 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore component library
+        run: dotnet restore VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj
 
-      - name: Build solution
-        run: dotnet build --configuration Release --no-restore
+      - name: Restore demo app
+        run: dotnet restore VIOVNL.Flowy.Demo/VIOVNL.Flowy.Demo.csproj
+
+      - name: Build component library
+        run: dotnet build VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj --configuration Release --no-restore
 
       - name: Check package can be created
         run: dotnet pack VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj --configuration Release --no-build --output ./test-nupkg

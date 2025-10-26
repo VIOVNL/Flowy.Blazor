@@ -78,11 +78,11 @@ jobs:
           sed -i "s|<Version>.*</Version>|<Version>$NEW_VERSION</Version>|g" VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj
           echo "Updated project file to version $NEW_VERSION"
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore component library
+        run: dotnet restore VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj
 
-      - name: Build solution
-        run: dotnet build --configuration Release --no-restore
+      - name: Build component library
+        run: dotnet build VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj --configuration Release --no-restore
 
       - name: Pack NuGet package
         run: dotnet pack VIOVNL.Flowy.Blazor/VIOVNL.Flowy.Blazor.csproj --configuration Release --no-build --output ./nupkg
